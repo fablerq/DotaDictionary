@@ -2,13 +2,17 @@ lazy val akkaHttpVersion = "10.1.7"
 lazy val akkaVersion    = "2.5.21"
 
 //mainClass in Compile := Some("com.fablerq.dd.Server")
-//mainClass in (Compile, run) := Some("com.fablerq.dd.Server")
+//mainClass in (Compile, run) in backend := Some("com.fablerq.dd.Server")
 //mainClass in (Compile, packageBin) := Some("com.fablerq.dd.Server")
+//mainClass in Compile := (mainClass in Compile in backend).value
 
-mainClass in Compile := (mainClass in Compile in backend).value
+//lazy val root = (project in file("."))
+//  .aggregate(backend)
 
-lazy val root = (project in file("."))
-  .aggregate(backend)
+lazy val root = project.aggregate(backend).dependsOn(backend)
+
+run in Compile <<= (run in Compile in backend)
+
 
 enablePlugins(JavaAppPackaging)
 
@@ -17,6 +21,7 @@ lazy val backend = project
     inThisBuild(List(
       scalaVersion    := "2.12.6"
     )),
+    mainClass in (Compile, run) := Some("com.fablerq.dd.Server"),
     name := "dotadictionary",
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor"           % akkaVersion,
