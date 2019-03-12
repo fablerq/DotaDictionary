@@ -35,3 +35,4 @@ lazy val backend = project
     )
   )
 
+enablePlugins(JavaAppPackaging)
