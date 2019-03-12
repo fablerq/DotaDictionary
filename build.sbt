@@ -1,6 +1,8 @@
 lazy val akkaHttpVersion = "10.1.7"
 lazy val akkaVersion    = "2.5.21"
 
+mainClass in Compile := Some("Main")
+
 lazy val root = (project in file("."))
   .aggregate(backend)
 
