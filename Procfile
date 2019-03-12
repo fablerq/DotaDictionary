@@ -1,1 +1,1 @@
-web: target/universal/stage/bin/dotadictionary -Dhttp.port=$PORT -Dhttp.stop-on-return=false
+web: -jar backend/target/scala-2.12/bot_jar/dotadictionary-assembly-0.1-SNAPSHOT.jar -Dhttp.port=$PORT -Dhttp.stop-on-return=false

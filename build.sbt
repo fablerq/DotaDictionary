@@ -1,7 +1,8 @@
 lazy val akkaHttpVersion = "10.1.7"
 lazy val akkaVersion    = "2.5.21"
 
-mainClass in Compile := Some("Server")
+mainClass in (Compile, run) := Some("com.fablerq.dd.Server")
+mainClass in (Compile, packageBin) := Some("com.fablerq.dd.Server")
 
 lazy val root = (project in file("."))
   .aggregate(backend)
