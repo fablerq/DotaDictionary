@@ -4,16 +4,17 @@ lazy val akkaVersion    = "2.5.21"
 //mainClass in Compile := Some("com.fablerq.dd.Server")
 //mainClass in (Compile, run) in backend := Some("com.fablerq.dd.Server")
 //mainClass in (Compile, packageBin) := Some("com.fablerq.dd.Server")
-//mainClass in Compile := (mainClass in Compile in backend).value
+
+
 
 //lazy val root = (project in file("."))
 //  .aggregate(backend)
 
-lazy val root = project.aggregate(backend).dependsOn(backend)
+lazy val root = project.aggregate(backend).dependsOn(backend) //<- don't forget dependsOn
 
 run in Compile <<= (run in Compile in backend)
 
-
+mainClass in Compile := (mainClass in Compile in backend).value
 enablePlugins(JavaAppPackaging)
 
 lazy val backend = project
