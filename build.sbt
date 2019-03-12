@@ -9,10 +9,9 @@ lazy val root = (project in file("."))
 lazy val backend = project
   .settings(
     inThisBuild(List(
-      organization    := "fablerq",
       scalaVersion    := "2.12.6"
     )),
-    name := "DotaDictionary",
+    name := "dotadictionary",
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-actor"           % akkaVersion,
       "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,

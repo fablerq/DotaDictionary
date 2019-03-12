@@ -1,1 +1,1 @@
-web: target/universal/stage/bin/DotaDictionary -Dhttp.port=$PORT
+web: target/universal/stage/bin/dotadictionary -Dhttp.port=$PORT
