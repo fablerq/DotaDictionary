@@ -9,6 +9,7 @@ lazy val akkaVersion    = "2.5.21"
 
 lazy val root = (project in file("."))
   .aggregate(backend)
+  .dependsOn(backend)
 
 //lazy val root = project.aggregate(backend).dependsOn(backend) 
 
