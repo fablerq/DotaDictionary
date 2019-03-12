@@ -6,6 +6,8 @@ mainClass in Compile := Some("Server")
 lazy val root = (project in file("."))
   .aggregate(backend)
 
+enablePlugins(JavaServerAppPackaging)
+
 lazy val backend = project
   .settings(
     inThisBuild(List(
@@ -36,4 +38,3 @@ lazy val backend = project
     )
   )
 
-enablePlugins(JavaAppPackaging)

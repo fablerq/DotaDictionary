@@ -2,12 +2,10 @@ package com.fablerq.dd.configs
 
 import com.fablerq.dd.models.Word
 import com.typesafe.config.ConfigFactory
-import org.bson.codecs.configuration.CodecRegistries.{fromProviders, fromRegistries}
-import org.mongodb.scala.{MongoClient, MongoCollection, MongoDatabase}
+import org.bson.codecs.configuration.CodecRegistries.{ fromProviders, fromRegistries }
+import org.mongodb.scala.{ MongoClient, MongoCollection, MongoDatabase }
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
-
-
 
 object Mongo {
   lazy val config = ConfigFactory.load()

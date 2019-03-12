@@ -2,10 +2,10 @@ package com.fablerq.dd.services
 
 import com.fablerq.dd.models.Word
 import com.fablerq.dd.repositories.WordRepository
-import com.fablerq.dd.services.WordService.{WordData, WordServiceResponse, WordsData}
+import com.fablerq.dd.services.WordService.{ WordData, WordServiceResponse, WordsData }
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 
@@ -24,21 +24,23 @@ class WordService(wordRepository: WordRepository) {
 
   //get single word
   def getWord(title: String): Future[Either[WordServiceResponse, WordData]] = {
-      wordRepository.getByTitle(title).map{
-        case word: Word => Right(WordData(word.title, word.translate, word.quantity))
-        case _ => Left(WordServiceResponse(false, "Слово не найдено!"))
-      }
+    wordRepository.getByTitle(title).map {
+      case word: Word => Right(WordData(word.title, word.translate, word.quantity))
+      case _ => Left(WordServiceResponse(false, "Слово не найдено!"))
+    }
   }
 
   //get all words
   def getAllWords: Future[WordsData] = {
     var words: Seq[WordData] = Seq()
-    val words2 = wordRepository.getAll.map { x => x.map { y =>
-      words = words :+ WordData(y.title, y.translate, y.quantity)
-    }}
+    val words2 = wordRepository.getAll.map { x =>
+      x.map { y =>
+        words = words :+ WordData(y.title, y.translate, y.quantity)
+      }
+    }
     //ToDo: too unprofessional, will change this shit later
     Await.result(words2, 1 seconds)
-    Future { new WordsData(words)}
+    Future { new WordsData(words) }
   }
 
   //delete single word
