@@ -27,7 +27,7 @@ export default class App extends Component {
   }
 
   getWords() {
-    fetch('http://localhost:9010/api/words')
+    fetch('https://dota-dictionary.herokuapp.com/api/words')
     .then((res) => res.json())
     .then((resJson) => {
       this.setState({words: resJson.words})
@@ -39,7 +39,9 @@ export default class App extends Component {
 
   CreateWord = e => {
     e.preventDefault();
-    fetch(`http://localhost:9010/api/words/add?title=${this.titleRef.current.value}&translate=${this.translateRef.current.value}`, {
+    console.log(this.titleRef.current.value);
+    console.log(this.translateRef.current.value);
+    fetch(`https://dota-dictionary.herokuapp.com/api/words/add?title=${this.titleRef.current.value}&translate=${this.translateRef.current.value}`, {
       method: 'post',
      })
      .then(

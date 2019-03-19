@@ -6,7 +6,7 @@ import akka.stream.ActorMaterializer
 import com.fablerq.dd.services.HttpService
 
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Properties, Success}
+import scala.util.{ Failure, Properties, Success }
 
 object Server extends App {
   implicit val system: ActorSystem = ActorSystem("DD")

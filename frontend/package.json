@@ -14,5 +14,5 @@
     "build": "react-scripts build && mv build ../backend/src/main/resources/",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
-  },
+  }
 }
