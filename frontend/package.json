@@ -4,9 +4,12 @@
   "dependencies": {
     "ajv": "^6.9.1",
     "react": "^16.2.0",
-    "react-dom": "^16.2.0"
+    "react-dom": "^16.2.0",
+    "babel-register": "7.0.0"
   },
   "devDependencies": {
+    "babel-preset-env": "^1.7.0",
+    "babel-register": "7.0.0",
     "react-scripts": "1.1.1"
   },
   "scripts": {
