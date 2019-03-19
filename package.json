@@ -1,4 +1,4 @@
 {
-  "start": { "postinstall": "cd frontend && npm install && npm run build" },
+  "start": { "postinstall": "cd frontend && npm install babel-register babel-preset-env --save-dev && npm run build" },
   "engines": { "node": "11.10.0" }
 }
