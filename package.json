@@ -1,4 +1,4 @@
 {
-  "start": { "postinstall": "cd frontend && npm install && npm start --harmony" },
+  "start": { "postinstall": "cd frontend && npm install && npm start" },
   "engines": { "node": "11.10.0" }
 }
