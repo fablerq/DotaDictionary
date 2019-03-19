@@ -1,6 +1,7 @@
 {
   "name": "frontend",
   "version": "0.1.0",
+  "homepage": "https://dota-dictionary.herokuapp.com",
   "dependencies": {
     "react": "^16.2.0",
     "react-dom": "^16.2.0"
@@ -10,7 +11,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && mv build ../backend/src/main/resources/",
+    "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
   }
