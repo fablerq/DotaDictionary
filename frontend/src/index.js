@@ -1,8 +1,10 @@
-var foo1 = require('react').React;
-var foo2 = require('react-dom').ReactDOM;
-var foo3 = require('./App').App;
+import React from 'react';
+import ReactDOM from 'react-dom';
+import './index.css';
+import App from './App';
 
 
 ReactDOM.render(
     <App />, 
     document.getElementById('root'));
+registerServiceWorker();

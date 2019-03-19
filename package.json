@@ -1,4 +1,5 @@
 {
+  "homepage": "https://dota-dictionary.herokuapp.com/",
   "start": { "postinstall": "cd frontend && npm install && npm run build" }
 }
 
