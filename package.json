@@ -1,4 +1,4 @@
 {
-  "start": { "postinstall": "cd frontend && npm install babel-register babel-preset-env --save-dev && npm start" },
+  "start": { "postinstall": "cd frontend && npm start" },
   "engines": { "node": "11.10.0" }
 }
