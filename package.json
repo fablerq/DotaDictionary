@@ -1,4 +1,3 @@
 {
-  "start": { "postinstall": "cd frontend && npm install && npm start" },
-  "engines": { "node": "11.10.0" }
+  "start": { "postinstall": "cd frontend && npm install && npm build" }
 }
