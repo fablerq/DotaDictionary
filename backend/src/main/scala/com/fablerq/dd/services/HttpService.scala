@@ -7,7 +7,12 @@ import com.fablerq.dd.routes.WordRoutes
 class HttpService {
   val wordroutes = new WordRoutes(new WordService(new WordRepository))
   val routes =
-    pathPrefix("api") {
-      wordroutes.route
-    }
+    get {
+      path("") {
+        getFromResource("frontend/build/index.html")
+      }
+    } ~
+      pathPrefix("api") {
+        wordroutes.route
+      }
 }
