@@ -29,6 +29,10 @@ class WordService(wordRepository: WordRepository) {
     }
   }
 
+  def getWordByTitle(title: String): Future[Word] = {
+    wordRepository.getByTitle(title)
+  }
+
   def addWord(params: WordParams): Future[ServiceResponse] = params match {
     case WordParams(Some(title), Some(translate), None) =>
       wordRepository.getByTitle(title).map {
