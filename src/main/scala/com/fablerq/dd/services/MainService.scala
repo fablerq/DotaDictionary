@@ -13,6 +13,8 @@ import com.fablerq.dd.Server.system
 import com.fablerq.dd.Server.materializer
 import com.fablerq.dd.repositories.{ ArticleRepository, WordRepository }
 
+import scala.util.{ Failure, Success }
+
 class MainService {
 
   val wordRepository = new WordRepository
@@ -35,60 +37,70 @@ class MainService {
   }
 
   def handlingWord(word: String): Future[MainServiceResponse] = {
-    translateWord(word).map {
-      translate =>
+    translateWord(word)
+      .flatMap { translate =>
         wordService.addWord(WordParams(
           Some(word),
           Some(translate),
           None
         ))
-    }.flatMap { x =>
-      wordService.getWordByTitle(word).map {
-        typeId => MainServiceResponse(true, Some("word"), Some(typeId._id.toString))
       }
-    }
+      .flatMap { _ =>
+        wordService.getWordByTitle(word).map {
+          typeId =>
+            MainServiceResponse(
+              true,
+              Some("word"),
+              Some(typeId._id.toString)
+            )
+        }
+      }
   }
 
   def handlingArticle(articleLink: String): Future[MainServiceResponse] = {
-    val article: Future[Option[ArticleResponse]] = Http()
+    Http()
       .singleRequest(HttpRequest(
         HttpMethods.GET,
         Uri(s"https://api.aylien.com/api/v1/extract?url=$articleLink")
       ).withHeaders(
           RawHeader("X-AYLIEN-TextAPI-Application-Key", System.getenv("AYLIEN-KEY")),
-          RawHeader("X-AYLIEN-TextAPI-Application-ID", System.getenv("AYLIEN-ID"))
+          RawHeader("X-AYLIEN-TextAPI-Application-ID",  System.getenv("AYLIEN-ID"))
         ))
       .flatMap(Unmarshal(_).to[Option[ArticleResponse]])
-
-    article.map {
-      x =>
-        x.get.article
-          .split(" ")
-          .filter(x => x.length > 2)
-          .map {
-            x =>
-              translateWord(x).map {
-                y =>
-                  wordService.addWord(WordParams(
-                    Some(x),
-                    Some(y),
-                    None
-                  ))
+      .flatMap { article =>
+        articleService.addArticle(
+          ArticleParams(
+            Some(articleService.setArticleTitle(article.get.title)),
+            Some(articleLink)
+          )
+        )
+        articleService.getIdByLink(articleLink).map { articleId =>
+          article.get.article
+            .replaceAll("[`*{}\\[\\]()>#+:~'%^&@<?;,\"!$=|./’]", " ")
+            .replaceAll("\n", " ")
+            .replaceAll("\n\n", " ")
+            .replaceAll("\\d", " ")
+            .toLowerCase()
+            .split(" ")
+            .filter(x => x.length > 3)
+            .map { x =>
+              articleService.addStatWordToArticle(articleId, x).map { response =>
+                if (!response.bool)
+                  articleService.updateWordStatForArticle(articleId, x)
               }
-          }
-
-        articleService.addArticle(ArticleParams(
-          Some(x.get.title),
-          Some(x.get.article),
-          Some(articleLink)
-        ))
-    }
-
+            }
+        }
+      }
+    //translateWord(x).map { y =>
+    //    wordService.addWord(WordParams(
+    //      Some(x),
+    //      Some(y),
+    //      None))}}
     Future(MainServiceResponse(true))
   }
 
   def translateWord(word: String): Future[String] = {
-    val translate: Future[Option[TranslateResponse]] = Http()
+    Http()
       .singleRequest(HttpRequest(
         HttpMethods.GET,
         Uri(s"https://translate.yandex.net/api/v1.5/tr.json/translate" +
@@ -98,9 +110,7 @@ class MainService {
           s"&format=plain")
       ))
       .flatMap(Unmarshal(_).to[Option[TranslateResponse]])
-    translate.map {
-      case x => x.get.text.head
-    }
+      .map(x => x.get.text.head)
   }
 
   def handlingVideo(videoLink: String): Future[MainServiceResponse] = {

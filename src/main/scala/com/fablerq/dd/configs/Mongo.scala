@@ -17,6 +17,7 @@ object Mongo {
     classOf[Quiz],
     classOf[Dwi],
     classOf[Stat],
+    classOf[WordStat],
     classOf[Article],
     classOf[Video]
   )

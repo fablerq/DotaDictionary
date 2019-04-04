@@ -19,7 +19,7 @@ class ArticleRoutes(articleService: ArticleService) {
         } ~
         patch {
           entity(as[ArticleParams]) { params =>
-            complete(articleService.updateArticleBody(params))
+            complete(articleService.updateArticleLink(params))
           }
         } ~
         parameters("id".as[String]) { id =>
@@ -35,10 +35,23 @@ class ArticleRoutes(articleService: ArticleService) {
             complete(articleService.deleteStatFromArticle(article, stat))
           }
         } ~
-        parameters("article".as[String], "stat".as[String], "percent".as[Int]) { (article, stat, percent) =>
-          post {
-            complete(articleService.addStatToArticle(article, stat, percent))
-          }
+        parameters("article".as[String], "stat".as[String], "percent".as[Int]) {
+          (article, stat, percent) =>
+            post {
+              complete(articleService.addStatToArticle(article, stat, percent))
+            }
+        } ~
+        parameters("article".as[String], "wordstat".as[String]) {
+          (article, wordstat) =>
+            delete {
+              complete(articleService.deleteStatWordFromArticle(article, wordstat))
+            } ~
+              post {
+                complete(articleService.addStatWordToArticle(article, wordstat))
+              } ~
+              patch {
+                complete(articleService.updateWordStatForArticle(article, wordstat))
+              }
         }
     }
   }
