@@ -217,7 +217,11 @@ class MainService {
   //=============================
 
   def handlingVideo(videoLink: String): Future[MainServiceResponse] = {
-    ???
+    Future(MainServiceResponse(
+      true,
+      Some("video"),
+      Some("not ready")
+    ))
   }
 
 }

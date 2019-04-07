@@ -34,6 +34,11 @@ class WordRoutes(wordService: WordService) {
               complete(wordService.getWordByTitle(id))
             }
         }
+      parameters("getbyid".as[String]) { id =>
+        post {
+          complete(wordService.getWord(id))
+        }
+      }
     }
   }
 }

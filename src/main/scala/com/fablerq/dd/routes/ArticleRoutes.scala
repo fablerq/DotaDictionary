@@ -24,7 +24,7 @@ class ArticleRoutes(articleService: ArticleService) {
         } ~
         parameters("id".as[String]) { id =>
           post {
-            complete(articleService.getArticleByTitle(id))
+            complete(articleService.getArticle(id))
           } ~
             delete {
               complete(articleService.deleteArticle(id))
