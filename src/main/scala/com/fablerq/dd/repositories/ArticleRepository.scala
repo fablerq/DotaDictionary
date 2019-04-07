@@ -1,6 +1,5 @@
 package com.fablerq.dd.repositories
 
-import com.fablerq.dd.configs.Mongo
 import com.fablerq.dd.models.{ Article, Stat, WordStat }
 import org.mongodb.scala.{ Completed, MongoCollection }
 import org.mongodb.scala.bson.{ BsonDocument, ObjectId }
@@ -23,7 +22,9 @@ class ArticleRepository(articleCollection: MongoCollection[Article]) {
     articleCollection.find().toFuture()
 
   def getByTitle(title: String): Future[Article] =
-    articleCollection.find(equal("title", title)).first().toFuture()
+    articleCollection.find(equal("title", title))
+      .first()
+      .toFuture()
 
   def getById(id: ObjectId): Future[Article] =
     articleCollection
@@ -55,9 +56,7 @@ class ArticleRepository(articleCollection: MongoCollection[Article]) {
     ).toFuture()
       .flatMap { _ =>
         getById(id)
-          .map { x =>
-            x
-          }
+          .map(x => x)
       }
   }
 

@@ -4,10 +4,11 @@ import akka.http.scaladsl.server.Directives._
 import com.fablerq.dd.models.VideoParams
 import com.fablerq.dd.services.VideoService
 import com.fablerq.dd.configs.Json4sSupport._
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 
 class VideoRoutes(videoService: VideoService) {
 
-  def route = {
+  def route = cors() {
     path("videos") {
       get {
         complete(videoService.getAllVideos)
@@ -35,10 +36,11 @@ class VideoRoutes(videoService: VideoService) {
             complete(videoService.deleteStatFromVideo(video, stat))
           }
         } ~
-        parameters("video".as[String], "stat".as[String], "percent".as[Int]) { (video, stat, percent) =>
-          post {
-            complete(videoService.addStatToVideo(video, stat, percent))
-          }
+        parameters("video".as[String], "stat".as[String], "percent".as[Int]) {
+          (video, stat, percent) =>
+            post {
+              complete(videoService.addStatToVideo(video, stat, percent))
+            }
         }
     }
   }

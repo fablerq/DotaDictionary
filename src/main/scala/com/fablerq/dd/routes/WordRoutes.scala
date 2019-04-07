@@ -4,10 +4,11 @@ import akka.http.scaladsl.server.Directives._
 import com.fablerq.dd.services.WordService
 import com.fablerq.dd.configs.Json4sSupport._
 import com.fablerq.dd.models.WordParams
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 
 class WordRoutes(wordService: WordService) {
 
-  def route = {
+  def route = cors() {
     path("words") {
       get {
         complete(wordService.getAllWords)
@@ -24,13 +25,13 @@ class WordRoutes(wordService: WordService) {
         } ~
         parameters("id".as[String]) { id =>
           delete {
-            complete(wordService.deleteWord(id))
+            complete(wordService.deleteWordByTitle(id))
           } ~
             patch {
               complete(wordService.updateQuantity(id))
             } ~
             post {
-              complete(wordService.getWord(id))
+              complete(wordService.getWordByTitle(id))
             }
         }
     }

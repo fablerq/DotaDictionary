@@ -4,10 +4,10 @@ import akka.http.scaladsl.server.Directives._
 import com.fablerq.dd.configs.Json4sSupport._
 import com.fablerq.dd.models.ArticleParams
 import com.fablerq.dd.services.ArticleService
-
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 class ArticleRoutes(articleService: ArticleService) {
 
-  def route = {
+  def route = cors() {
     path("articles") {
       get {
         complete(articleService.getAllArticles)
@@ -24,7 +24,7 @@ class ArticleRoutes(articleService: ArticleService) {
         } ~
         parameters("id".as[String]) { id =>
           post {
-            complete(articleService.getArticle(id))
+            complete(articleService.getArticleByTitle(id))
           } ~
             delete {
               complete(articleService.deleteArticle(id))

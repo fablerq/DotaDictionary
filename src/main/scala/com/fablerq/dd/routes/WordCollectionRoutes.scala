@@ -4,10 +4,11 @@ import akka.http.scaladsl.server.Directives._
 import com.fablerq.dd.models.WordCollectionParams
 import com.fablerq.dd.services.WordCollectionService
 import com.fablerq.dd.configs.Json4sSupport._
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
 
 class WordCollectionRoutes(wordCollectionService: WordCollectionService) {
 
-  def route = {
+  def route = cors() {
     path("wordcollections") {
       get {
         complete(wordCollectionService.getAllWordCollections)
@@ -30,13 +31,14 @@ class WordCollectionRoutes(wordCollectionService: WordCollectionService) {
               complete(wordCollectionService.getWordCollection(id))
             }
         } ~
-        parameters("collection".as[String], "word".as[String]) { (collection, word) =>
-          delete {
-            complete(wordCollectionService.deleteWordFromWordCollection(collection, word))
-          } ~
-            post {
-              complete(wordCollectionService.addWordToWordCollection(collection, word))
-            }
+        parameters("collection".as[String], "word".as[String]) {
+          (collection, word) =>
+            delete {
+              complete(wordCollectionService.deleteWordFromWordCollection(collection, word))
+            } ~
+              post {
+                complete(wordCollectionService.addWordToWordCollection(collection, word))
+              }
         }
     }
   }

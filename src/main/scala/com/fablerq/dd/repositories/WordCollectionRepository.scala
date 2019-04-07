@@ -1,7 +1,6 @@
 package com.fablerq.dd.repositories
 
-import com.fablerq.dd.configs.Mongo
-import com.fablerq.dd.models.{ WordCollection, WordCollectionParams }
+import com.fablerq.dd.models.WordCollection
 import org.mongodb.scala.{ Completed, MongoCollection }
 import org.mongodb.scala.bson.ObjectId
 import org.mongodb.scala.bson.collection.mutable.Document
@@ -24,7 +23,8 @@ class WordCollectionRepository(wordCollectionCollection: MongoCollection[WordCol
   def getById(id: ObjectId): Future[WordCollection] =
     wordCollectionCollection
       .find(Document("_id" -> id))
-      .first().toFuture()
+      .first()
+      .toFuture()
 
   def addWordCollection(wordCollection: WordCollection): Future[Completed] =
     wordCollectionCollection.insertOne(wordCollection).toFuture()

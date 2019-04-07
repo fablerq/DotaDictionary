@@ -4,17 +4,17 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import com.fablerq.dd.services.HttpService
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Properties, Success }
+import com.fablerq.dd.configs.Mongo.database
 
 object Server extends App {
   implicit val system: ActorSystem = ActorSystem("DD")
   implicit val executor: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  val httpService = new HttpService
+  val httpService = new HttpService(database)
 
   //heroku var
   val myPort = Properties.envOrElse("PORT", "8080").toInt

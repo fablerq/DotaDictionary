@@ -13,7 +13,8 @@ class VideoService(videoRepository: VideoRepository) {
   def getAllVideos: Future[Either[ServiceResponse, Seq[Video]]] = {
     videoRepository.getAll.map {
       case x: Seq[Video] if x.nonEmpty => Right(x)
-      case _ => Left(ServiceResponse(false, "База данных видео пуста"))
+      case _ =>
+        Left(ServiceResponse(false, "База данных видео пуста"))
     }
   }
 
@@ -22,11 +23,10 @@ class VideoService(videoRepository: VideoRepository) {
       val objectId = new ObjectId(id)
       videoRepository.getById(objectId).map {
         case video: Video => Right(video)
-        case _ => Left(ServiceResponse(false, "Видео не найдено!"))
+        case _ =>
+          Left(ServiceResponse(false, "Видео не найдено!"))
       }
-    } else {
-      Future(Left(ServiceResponse(false, "Неверный запрос!")))
-    }
+    } else Future(Left(ServiceResponse(false, "Неверный запрос!")))
   }
 
   def addVideo(params: VideoParams): Future[ServiceResponse] = params match {
@@ -41,18 +41,22 @@ class VideoService(videoRepository: VideoRepository) {
           ))
           ServiceResponse(true, "Видео успешно успешно добавлено")
       }
-    case _ => Future(ServiceResponse(false, s"Видео ${params.title} не удалось добавить. Неверный запрос"))
+    case _ => Future(ServiceResponse(false, s"Видео ${params.title} " +
+      s"не удалось добавить. Неверный запрос"))
   }
 
   def updateVideoDescription(params: VideoParams): Future[ServiceResponse] = params match {
-    case VideoParams(Some(title), Some(description), None, None) =>
+    case VideoParams(Some(title), Some(description), Some(link), None) =>
       videoRepository.getByTitle(title).map {
         case video: Video =>
           videoRepository.updateVideoDescription(video._id, params.description.get)
           ServiceResponse(true, "Описание видео успешно обновлено")
-        case _ => ServiceResponse(false, s"Видео $title не найдено")
+        case _ =>
+          ServiceResponse(false, s"Видео $title не найдено")
       }
-    case _ => Future(ServiceResponse(false, s"Видео ${params.title} не удалось обновить. Неверный запрос"))
+    case _ =>
+      Future(ServiceResponse(false, s"Видео ${params.title} не удалось обновить. " +
+        s"Неверный запрос"))
   }
 
   def deleteVideo(id: String): Future[ServiceResponse] = {
@@ -62,11 +66,10 @@ class VideoService(videoRepository: VideoRepository) {
         case video: Video =>
           videoRepository.deleteVideo(video._id)
           ServiceResponse(true, "Видео успешно удалено")
-        case _ => ServiceResponse(false, "Не удалось удалить видео")
+        case _ =>
+          ServiceResponse(false, "Не удалось удалить видео")
       }
-    } else {
-      Future(ServiceResponse(false, "Неверный запрос!"))
-    }
+    } else Future(ServiceResponse(false, "Неверный запрос!"))
   }
 
   def deleteStatFromVideo(video: String, stat: String): Future[ServiceResponse] = {
@@ -76,11 +79,10 @@ class VideoService(videoRepository: VideoRepository) {
         case _: Video =>
           videoRepository.deleteStatFromVideo(objectId, stat)
           ServiceResponse(false, s"Статистика успешна удалена")
-        case _ => ServiceResponse(false, s"Видео $video не существует")
+        case _ =>
+          ServiceResponse(false, s"Видео $video не существует")
       }
-    } else {
-      Future(ServiceResponse(false, "Неверный запрос!"))
-    }
+    } else Future(ServiceResponse(false, "Неверный запрос!"))
   }
 
   def addStatToVideo(video: String, collectionId: String, percent: Int): Future[ServiceResponse] = {
@@ -94,9 +96,7 @@ class VideoService(videoRepository: VideoRepository) {
         case _ =>
           ServiceResponse(false, s"Не удалось добавить статистику. Видео с id $video не найдено")
       }
-    } else {
-      Future(ServiceResponse(false, "Неверный запрос!"))
-    }
+    } else Future(ServiceResponse(false, "Неверный запрос!"))
   }
 
 }

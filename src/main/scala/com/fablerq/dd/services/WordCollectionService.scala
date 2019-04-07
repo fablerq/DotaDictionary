@@ -11,12 +11,14 @@ import com.fablerq.dd.configs.Mongo._
 
 class WordCollectionService(wordCollectionRepository: WordCollectionRepository) {
 
-  val wordRepository: WordRepository = new WordRepository(wordCollection)
+  val wordRepository: WordRepository =
+    new WordRepository(wordCollection)
 
   def getAllWordCollections: Future[Either[ServiceResponse, Seq[WordCollection]]] = {
     wordCollectionRepository.getAll.map {
       case x: Seq[WordCollection] if x.nonEmpty => Right(x)
-      case _ => Left(ServiceResponse(false, "База данных коллекций слов пуста"))
+      case _ =>
+        Left(ServiceResponse(false, "База данных коллекций слов пуста"))
     }
   }
 
@@ -24,10 +26,21 @@ class WordCollectionService(wordCollectionRepository: WordCollectionRepository) 
     if (ObjectId.isValid(id)) {
       val objectId = new ObjectId(id)
       wordCollectionRepository.getById(objectId).map {
-        case wordCollection: WordCollection => Right(wordCollection)
-        case _ => Left(ServiceResponse(false, "Коллекция слов не найдена!"))
+        case wordCollection: WordCollection =>
+          Right(wordCollection)
+        case _ =>
+          Left(ServiceResponse(false, "Коллекция слов не найдена!"))
       }
     } else Future(Left(ServiceResponse(false, "Неверный запрос!")))
+  }
+
+  def getWordCollectionByTitle(title: String): Future[Either[ServiceResponse, WordCollection]] = {
+    wordCollectionRepository.getByTitle(title).map {
+      case wordCollection: WordCollection =>
+        Right(wordCollection)
+      case _ =>
+        Left(ServiceResponse(false, "Коллекция слов не найдена!"))
+    }
   }
 
   def addWordCollection(params: WordCollectionParams): Future[ServiceResponse] = params match {
@@ -49,23 +62,24 @@ class WordCollectionService(wordCollectionRepository: WordCollectionRepository) 
         s"не удалось добавить. Неверный запрос"))
   }
 
-  def updateWordCollectionDescription(params: WordCollectionParams): Future[ServiceResponse] = params match {
-    case WordCollectionParams(Some(title), Some(translate), None) =>
-      wordCollectionRepository.getByTitle(title).map {
-        case wordCollection: WordCollection =>
-          wordCollectionRepository.updateWordCollectionDescription(
-            wordCollection._id,
-            params.description.get
-          )
-          ServiceResponse(true, "Описание коллекции слов успешно обновлено")
-        case _ =>
-          ServiceResponse(false, s"Коллекция слов $title не найдена")
-      }
-    case _ =>
-      Future(ServiceResponse(
-        false, s"Коллекцию ${params.title} не удалось обновить. Неверный запрос"
-      ))
-  }
+  def updateWordCollectionDescription(params: WordCollectionParams): Future[ServiceResponse] =
+    params match {
+      case WordCollectionParams(Some(title), Some(translate), None) =>
+        wordCollectionRepository.getByTitle(title).map {
+          case wordCollection: WordCollection =>
+            wordCollectionRepository.updateWordCollectionDescription(
+              wordCollection._id,
+              params.description.get
+            )
+            ServiceResponse(true, "Описание коллекции слов успешно обновлено")
+          case _ =>
+            ServiceResponse(false, s"Коллекция слов $title не найдена")
+        }
+      case _ =>
+        Future(ServiceResponse(
+          false, s"Коллекцию ${params.title} не удалось обновить. Неверный запрос"
+        ))
+    }
 
   def deleteWordCollection(id: String): Future[ServiceResponse] = {
     if (ObjectId.isValid(id)) {
@@ -74,7 +88,8 @@ class WordCollectionService(wordCollectionRepository: WordCollectionRepository) 
         case wordCollection: WordCollection =>
           wordCollectionRepository.deleteWordCollection(wordCollection._id)
           ServiceResponse(true, "Коллекция успешно удалена")
-        case _ => ServiceResponse(false, "Не удалось удалить коллекцию")
+        case _ =>
+          ServiceResponse(false, "Не удалось удалить коллекцию")
       }
     } else Future(ServiceResponse(false, "Неверный запрос!"))
   }
@@ -83,33 +98,36 @@ class WordCollectionService(wordCollectionRepository: WordCollectionRepository) 
     if (ObjectId.isValid(collection) & ObjectId.isValid(id)) {
       val objectId = new ObjectId(collection)
       wordCollectionRepository.getById(objectId).map {
-        case _: WordCollection =>
-          wordCollectionRepository.deleteWordToWordCollection(objectId, id)
-          ServiceResponse(
-            false, s"Слово с id $id успешно удалено в коллекции $collection"
-          )
-        case _ => ServiceResponse(false, s"Коллекция $collection не существует")
+        case collection: WordCollection =>
+          if (collection.words.contains(id)) {
+            wordCollectionRepository.deleteWordToWordCollection(objectId, id)
+            ServiceResponse(
+              false, s"Слово с id $id успешно удалено в коллекции $collection"
+            )
+          } else ServiceResponse(false, s"Слово в коллекции отсутствует")
+        case _ =>
+          ServiceResponse(false, s"Коллекция $collection не существует")
       }
     } else Future(ServiceResponse(false, "Неверный запрос!"))
   }
 
-  //почему Future[Object], кхм..
   def addWordToWordCollection(collectionId: String, wordId: String): Future[ServiceResponse] = {
     if (ObjectId.isValid(collectionId) & ObjectId.isValid(wordId)) {
       val objectIdForWord = new ObjectId(wordId)
-      //wordRepository.getById(objectIdForWord).map {
-      //  case _: Word =>
       val objectIdForCollection = new ObjectId(collectionId)
       wordCollectionRepository.getById(objectIdForCollection).map {
-        case _: WordCollection =>
-          wordCollectionRepository.addWordToWordCollection(objectIdForCollection, wordId)
-          ServiceResponse(false, s"Слово с id $wordId успешно добавлено в коллекцию $collectionId")
+        case collection: WordCollection =>
+          if (collection.words.contains(wordId)) {
+            ServiceResponse(false, s"Слово в коллекции уже присутствует")
+          } else
+            wordCollectionRepository.addWordToWordCollection(objectIdForCollection, wordId)
+          ServiceResponse(
+            false,
+            s"Слово с id $wordId успешно добавлено в коллекцию $collectionId"
+          )
         case _ =>
           ServiceResponse(false, s"Не удалось добавить слово. Коллекция $collectionId не найдена")
       }
-      //  case _ =>
-      //   ServiceResponse(false, s"Слово с id $wordId не существует")
-      //}
     } else {
       Future(ServiceResponse(false, "Неверный запрос!"))
     }

@@ -13,8 +13,6 @@ import com.fablerq.dd.Server.system
 import com.fablerq.dd.Server.materializer
 import com.fablerq.dd.repositories.{ ArticleRepository, WordCollectionRepository, WordRepository }
 
-import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
 import com.fablerq.dd.configs.Mongo._
 
 class MainService {
@@ -54,9 +52,7 @@ class MainService {
   def handlingWord(word: String): Future[MainServiceResponse] = {
     wordService.getWordByTitle(word)
       .flatMap { x =>
-        if (x.isInstanceOf[Word]) {
-          Future(x)
-        } else {
+        if (x == null) {
           translateWord(word)
             .flatMap { translate =>
               wordService.addWord(WordParams(
@@ -64,14 +60,18 @@ class MainService {
                 Some(translate),
                 None
               ))
+                .flatMap { _ =>
+                  wordService.getWordByTitle(word).map {
+                    typeId =>
+                      MainServiceResponse(true, Some("word"), Some(typeId._id.toString))
+                  }
+                }
             }
-        }
-      }
-      .flatMap { _ =>
-        wordService.getWordByTitle(word).map {
-          typeId =>
-            MainServiceResponse(true, Some("word"), Some(typeId._id.toString))
-        }
+        } else Future(MainServiceResponse(
+          true,
+          Some("word"),
+          Some(x._id.toString)
+        ))
       }
   }
 

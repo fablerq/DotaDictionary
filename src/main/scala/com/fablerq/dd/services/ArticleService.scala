@@ -27,6 +27,14 @@ class ArticleService(articleRepository: ArticleRepository) {
     } else Future(Left(ServiceResponse(false, "Неверный запрос!")))
   }
 
+  def getArticleByTitle(title: String): Future[Either[ServiceResponse, Article]] = {
+    articleRepository.getByTitle(title).map {
+      case article: Article => Right(article)
+      case _ =>
+        Left(ServiceResponse(false, "Статья не найдена!"))
+    }
+  }
+
   def addArticle(params: ArticleParams): Future[ServiceResponse] = params match {
     case ArticleParams(Some(title), Some(link), None) =>
       articleRepository.getByLink(link).map {
@@ -52,8 +60,9 @@ class ArticleService(articleRepository: ArticleRepository) {
       articleRepository.getByTitle(title).map {
         case article: Article =>
           articleRepository.updateArticleLink(article._id, params.link.get)
-          ServiceResponse(true, "Ссылка статьи успешно обновлено")
-        case _ => ServiceResponse(false, s"Статья $title не найдена")
+          ServiceResponse(true, "Ссылка статьи успешно обновлена")
+        case _ =>
+          ServiceResponse(false, s"Статья $title не найдена")
       }
     case _ =>
       Future(ServiceResponse(
@@ -72,6 +81,16 @@ class ArticleService(articleRepository: ArticleRepository) {
           ServiceResponse(false, "Не удалось удалить статью")
       }
     } else Future(ServiceResponse(false, "Неверный запрос!"))
+  }
+
+  def deleteArticleByTitle(title: String): Future[ServiceResponse] = {
+    articleRepository.getByTitle(title).map {
+      case article: Article =>
+        articleRepository.deleteArticle(article._id)
+        ServiceResponse(true, "Статья успешно удалена")
+      case _ =>
+        ServiceResponse(false, "Не удалось удалить статью")
+    }
   }
 
   def addStatWordToArticle(article: String, word: String): Future[ServiceResponse] = {

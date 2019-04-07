@@ -3,37 +3,35 @@ package com.fablerq.dd.services
 import akka.http.scaladsl.server.Directives._
 import com.fablerq.dd.repositories.{ ArticleRepository, VideoRepository, WordCollectionRepository, WordRepository }
 import com.fablerq.dd.routes._
-import com.fablerq.dd.configs.Mongo._
+import org.mongodb.scala.MongoDatabase
 
-class HttpService {
+class HttpService(database: MongoDatabase) {
 
   val wordRoutes =
     new WordRoutes(
       new WordService(
-        new WordRepository(wordCollection)
+        new WordRepository(database.getCollection("words"))
       )
     )
 
   val wordCollectionRoutes =
     new WordCollectionRoutes(
       new WordCollectionService(
-        new WordCollectionRepository(wordCollectionCollection)
+        new WordCollectionRepository(database.getCollection("wordcollections"))
       )
     )
 
   val videoRoutes =
     new VideoRoutes(
       new VideoService(
-        new VideoRepository(videoCollection)
+        new VideoRepository(database.getCollection("videos"))
       )
     )
 
   val articleRoutes =
     new ArticleRoutes(
       new ArticleService(
-        new ArticleRepository(
-          articleCollection
-        )
+        new ArticleRepository(database.getCollection("articles"))
       )
     )
 

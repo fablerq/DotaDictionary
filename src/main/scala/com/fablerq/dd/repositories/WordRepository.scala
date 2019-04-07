@@ -19,7 +19,9 @@ class WordRepository(wordCollection: MongoCollection[Word]) {
     wordCollection.find().toFuture()
 
   def getByTitle(title: String): Future[Word] =
-    wordCollection.find(equal("title", title)).first().toFuture()
+    wordCollection.find(equal("title", title))
+      .first()
+      .toFuture()
 
   def getById(id: ObjectId): Future[Word] =
     wordCollection

@@ -6,7 +6,7 @@ import com.mongodb.{ MongoCredential, ServerAddress }
 import com.mongodb.connection.{ ClusterSettings, ConnectionPoolSettings }
 import com.typesafe.config.ConfigFactory
 import org.bson.codecs.configuration.CodecRegistries.{ fromProviders, fromRegistries }
-import org.mongodb.scala.{ MongoClient, MongoClientSettings, MongoCollection, MongoDatabase, ServerAddress }
+import org.mongodb.scala._
 import org.mongodb.scala.bson.codecs.DEFAULT_CODEC_REGISTRY
 import org.mongodb.scala.bson.codecs.Macros._
 
@@ -50,7 +50,7 @@ object Mongo {
   lazy val mongoClient: MongoClient =
     MongoClient(settings)
 
-  private val customCodecs = fromProviders(
+  lazy val customCodecs = fromProviders(
     classOf[Word],
     classOf[WordCollection],
     classOf[Quiz],

@@ -19,7 +19,9 @@ class VideoRepository(videoCollection: MongoCollection[Video]) {
     videoCollection.find().toFuture()
 
   def getByTitle(title: String): Future[Video] =
-    videoCollection.find(equal("title", title)).first().toFuture()
+    videoCollection.find(equal("title", title))
+      .first()
+      .toFuture()
 
   def getById(id: ObjectId): Future[Video] =
     videoCollection
@@ -29,7 +31,8 @@ class VideoRepository(videoCollection: MongoCollection[Video]) {
   def getByLink(id: String): Future[Video] =
     videoCollection
       .find(Document("link" -> id))
-      .first().toFuture()
+      .first()
+      .toFuture()
 
   def addVideo(video: Video): Future[Completed] =
     videoCollection.insertOne(video).toFuture()
