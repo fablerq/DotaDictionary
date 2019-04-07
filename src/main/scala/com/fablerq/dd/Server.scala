@@ -4,8 +4,9 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import com.fablerq.dd.services.HttpService
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Properties, Success }
 
 object Server extends App {

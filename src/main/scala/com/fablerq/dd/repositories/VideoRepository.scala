@@ -2,7 +2,7 @@ package com.fablerq.dd.repositories
 
 import com.fablerq.dd.configs.Mongo
 import com.fablerq.dd.models.{ Stat, Video }
-import org.mongodb.scala.Completed
+import org.mongodb.scala.{ Completed, MongoCollection }
 import org.mongodb.scala.bson.ObjectId
 import org.mongodb.scala.bson.collection.mutable.Document
 import org.mongodb.scala.model.Filters.equal
@@ -11,9 +11,7 @@ import org.mongodb.scala.result.{ DeleteResult, UpdateResult }
 
 import scala.concurrent.Future
 
-class VideoRepository {
-
-  val videoCollection = Mongo.getVideoCollection
+class VideoRepository(videoCollection: MongoCollection[Video]) {
 
   def count = videoCollection.count().toFuture()
 

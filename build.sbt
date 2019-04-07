@@ -26,6 +26,7 @@ lazy val root = (project in file("."))
         "ch.qos.logback" % "logback-classic" % "1.2.3",
         "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0",
 
+
         "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test
       )
     )

@@ -7,10 +7,11 @@ import org.mongodb.scala.bson.ObjectId
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import com.fablerq.dd.configs.Mongo._
 
 class WordCollectionService(wordCollectionRepository: WordCollectionRepository) {
 
-  val wordRepository: WordRepository = new WordRepository
+  val wordRepository: WordRepository = new WordRepository(wordCollection)
 
   def getAllWordCollections: Future[Either[ServiceResponse, Seq[WordCollection]]] = {
     wordCollectionRepository.getAll.map {
@@ -26,9 +27,7 @@ class WordCollectionService(wordCollectionRepository: WordCollectionRepository) 
         case wordCollection: WordCollection => Right(wordCollection)
         case _ => Left(ServiceResponse(false, "Коллекция слов не найдена!"))
       }
-    } else {
-      Future(Left(ServiceResponse(false, "Неверный запрос!")))
-    }
+    } else Future(Left(ServiceResponse(false, "Неверный запрос!")))
   }
 
   def addWordCollection(params: WordCollectionParams): Future[ServiceResponse] = params match {
@@ -38,23 +37,34 @@ class WordCollectionService(wordCollectionRepository: WordCollectionRepository) 
           ServiceResponse(false, s"Коллекция слов ${params.title} уже создана")
         case _ =>
           wordCollectionRepository.addWordCollection(WordCollection.apply(
-            new ObjectId(), title,
-            description, List()
+            new ObjectId(),
+            title,
+            description,
+            List()
           ))
           ServiceResponse(true, "Коллекция слов успешно добавлена")
       }
-    case _ => Future(ServiceResponse(false, s"Коллекцию слов ${params.title} не удалось добавить. Неверный запрос"))
+    case _ =>
+      Future(ServiceResponse(false, s"Коллекцию слов ${params.title} " +
+        s"не удалось добавить. Неверный запрос"))
   }
 
   def updateWordCollectionDescription(params: WordCollectionParams): Future[ServiceResponse] = params match {
     case WordCollectionParams(Some(title), Some(translate), None) =>
       wordCollectionRepository.getByTitle(title).map {
         case wordCollection: WordCollection =>
-          wordCollectionRepository.updateWordCollectionDescription(wordCollection._id, params.description.get)
+          wordCollectionRepository.updateWordCollectionDescription(
+            wordCollection._id,
+            params.description.get
+          )
           ServiceResponse(true, "Описание коллекции слов успешно обновлено")
-        case _ => ServiceResponse(false, s"Коллекция слов $title не найдена")
+        case _ =>
+          ServiceResponse(false, s"Коллекция слов $title не найдена")
       }
-    case _ => Future(ServiceResponse(false, s"Коллекцию ${params.title} не удалось обновить. Неверный запрос"))
+    case _ =>
+      Future(ServiceResponse(
+        false, s"Коллекцию ${params.title} не удалось обновить. Неверный запрос"
+      ))
   }
 
   def deleteWordCollection(id: String): Future[ServiceResponse] = {
@@ -66,9 +76,7 @@ class WordCollectionService(wordCollectionRepository: WordCollectionRepository) 
           ServiceResponse(true, "Коллекция успешно удалена")
         case _ => ServiceResponse(false, "Не удалось удалить коллекцию")
       }
-    } else {
-      Future(ServiceResponse(false, "Неверный запрос!"))
-    }
+    } else Future(ServiceResponse(false, "Неверный запрос!"))
   }
 
   def deleteWordFromWordCollection(collection: String, id: String): Future[ServiceResponse] = {
@@ -77,12 +85,12 @@ class WordCollectionService(wordCollectionRepository: WordCollectionRepository) 
       wordCollectionRepository.getById(objectId).map {
         case _: WordCollection =>
           wordCollectionRepository.deleteWordToWordCollection(objectId, id)
-          ServiceResponse(false, s"Слово с id $id успешно удалено в коллекции $collection")
+          ServiceResponse(
+            false, s"Слово с id $id успешно удалено в коллекции $collection"
+          )
         case _ => ServiceResponse(false, s"Коллекция $collection не существует")
       }
-    } else {
-      Future(ServiceResponse(false, "Неверный запрос!"))
-    }
+    } else Future(ServiceResponse(false, "Неверный запрос!"))
   }
 
   //почему Future[Object], кхм..

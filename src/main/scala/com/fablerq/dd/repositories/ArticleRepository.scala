@@ -2,18 +2,19 @@ package com.fablerq.dd.repositories
 
 import com.fablerq.dd.configs.Mongo
 import com.fablerq.dd.models.{ Article, Stat, WordStat }
-import org.mongodb.scala.Completed
-import org.mongodb.scala.bson.ObjectId
+import org.mongodb.scala.{ Completed, MongoCollection }
+import org.mongodb.scala.bson.{ BsonDocument, ObjectId }
 import org.mongodb.scala.bson.collection.mutable.Document
 import org.mongodb.scala.model.Filters.equal
-import org.mongodb.scala.model.Updates.{ addToSet, pullByFilter }
+import org.mongodb.scala.model.Updates._
 import org.mongodb.scala.result.{ DeleteResult, UpdateResult }
-import org.mongodb.scala.model.Sorts._
+
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class ArticleRepository {
+class ArticleRepository(articleCollection: MongoCollection[Article]) {
 
-  val articleCollection = Mongo.getArticleCollection
+  //val articleCollection = Mongo.getArticleCollection
 
   def count = articleCollection.count().toFuture()
 
@@ -46,6 +47,19 @@ class ArticleRepository {
 
   def deleteArticle(id: ObjectId): Future[DeleteResult] =
     articleCollection.deleteOne(Document("_id" -> id)).toFuture()
+
+  def addSomeStatsWordToArticle(id: ObjectId, list: List[WordStat]): Future[Article] = {
+    articleCollection.updateOne(
+      Document("_id" -> id),
+      addEachToSet("words", list.map(r => r): _*)
+    ).toFuture()
+      .flatMap { _ =>
+        getById(id)
+          .map { x =>
+            x
+          }
+      }
+  }
 
   def addStatWordToArticle(id: ObjectId, wordStat: WordStat): Future[UpdateResult] = {
     articleCollection.updateOne(

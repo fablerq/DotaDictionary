@@ -2,7 +2,7 @@ package com.fablerq.dd.repositories
 
 import com.fablerq.dd.configs.Mongo
 import com.fablerq.dd.models.{ Word, WordParams }
-import org.mongodb.scala.Completed
+import org.mongodb.scala.{ Completed, MongoCollection }
 import org.mongodb.scala.bson.ObjectId
 import org.mongodb.scala.bson.collection.mutable.Document
 import org.mongodb.scala.model.Filters._
@@ -11,9 +11,7 @@ import org.mongodb.scala.result.{ DeleteResult, UpdateResult }
 
 import scala.concurrent.Future
 
-class WordRepository {
-
-  val wordCollection = Mongo.getWordCollection
+class WordRepository(wordCollection: MongoCollection[Word]) {
 
   def count = wordCollection.count().toFuture()
 
