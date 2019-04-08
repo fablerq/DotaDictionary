@@ -18,6 +18,14 @@ class WordService(wordRepository: WordRepository) {
     }
   }
 
+  def getWordsByPage(page: Int): Future[Either[ServiceResponse, Seq[Word]]] = {
+    wordRepository.getWordsByPage(page).map {
+      case x: Seq[Word] if x.nonEmpty => Right(x)
+      case _ =>
+        Left(ServiceResponse(false, "База данных слов пуста"))
+    }
+  }
+
   def getWord(id: String): Future[Either[ServiceResponse, Word]] = {
     if (ObjectId.isValid(id)) {
       val objectId = new ObjectId(id)

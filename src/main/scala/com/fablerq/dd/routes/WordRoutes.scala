@@ -38,6 +38,11 @@ class WordRoutes(wordService: WordService) {
           post {
             complete(wordService.getWord(id))
           }
+        } ~
+        parameters("page".as[Int]) { page =>
+          post {
+            complete(wordService.getWordsByPage(page))
+          }
         }
     }
   }
