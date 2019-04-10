@@ -11,6 +11,7 @@ case class Article(
 )
 
 case class ArticleParams(
+  id: Option[String] = None,
   title: Option[String] = None,
   link: Option[String] = None,
   stats: Option[List[Stat]] = None

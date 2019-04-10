@@ -7,40 +7,38 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.fablerq.dd.models._
 import com.fablerq.dd.configs.Json4sSupport._
 
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import com.fablerq.dd.Server.system
 import com.fablerq.dd.Server.materializer
-import com.fablerq.dd.repositories.{ ArticleRepository, WordCollectionRepository, WordRepository }
+import org.mongodb.scala.bson.ObjectId
 
-import com.fablerq.dd.configs.Mongo._
+trait MainService {
+  def defineRequest(request: String): Future[MainServiceResponse]
+  def handlingWord(word: String): Future[MainServiceResponse]
+  def translateWord(word: String): Future[String]
+  def handlingArticle(articleLink: String): Future[MainServiceResponse]
+  def calcRepeating(list: List[String], map: Map[String, Int]): Map[String, Int]
+  def setArticleWords(text: String): List[WordStat]
+  def setStatsForArticle(articleId: ObjectId, rightWords: List[WordStat]): Future[Boolean]
+  def handlingVideo(videoLink: String): Future[MainServiceResponse]
+}
 
-class MainService {
-
-  val wordService =
-    new WordService(
-      new WordRepository(wordCollection)
-    )
-
-  val wordCollectionService =
-    new WordCollectionService(
-      new WordCollectionRepository(wordCollectionCollection)
-    )
-
-  val articleService =
-    new ArticleService(
-      new ArticleRepository(articleCollection)
-    )
+class MainServiceImpl(
+    wordService: WordService,
+    wordCollectionService: WordCollectionService,
+    articleService: ArticleService
+) extends MainService {
 
   def defineRequest(request: String): Future[MainServiceResponse] = {
-    val validURlRequest = "^(https?)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]".r
-    val validWordRequest = "[a-zA-Z]+".r
-    val validYoutubeRequest = "^(http(s)??\\:\\/\\/)?(www\\.)?((youtube\\.com\\/watch\\?v=)|(youtu.be\\/))([a-zA-Z0-9\\-_])+".r
+    val ValidURlRequest = "^(https?)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]".r
+    val ValidWordRequest = "[a-zA-Z]+".r
+    val ValidYoutubeRequest = "^(http(s)??\\:\\/\\/)?(www\\.)?((youtube\\.com\\/watch\\?v=)|(youtu.be\\/))([a-zA-Z0-9\\-_])+".r
 
     request match {
-      case validYoutubeRequest(_) => handlingVideo(request)
-      case validURlRequest(_) => handlingArticle(request)
-      case x if x.matches("[a-zA-Z]+") => handlingWord(request)
+      case ValidYoutubeRequest(_) => handlingVideo(request)
+      case ValidURlRequest(_) => handlingArticle(request)
+      case ValidWordRequest() => handlingWord(request)
       case _ => Future(MainServiceResponse(false))
     }
   }
@@ -107,26 +105,23 @@ class MainService {
               ))
             .flatMap(Unmarshal(_).to[Option[ArticleResponse]])
             .flatMap { articleResponse =>
-              articleService.addArticle(
-                ArticleParams(
-                  Some(articleService.setArticleTitle(articleResponse.get.title)),
-                  Some(articleLink)
-                )
+              val words: List[WordStat] = setArticleWords(articleResponse.get.article)
+              val article = Article(
+                new ObjectId(),
+                articleService.setArticleTitle(articleResponse.get.title),
+                words,
+                articleLink,
+                List()
               )
+              articleService.addArticleDirectly(article)
                 .flatMap { _ =>
-                  articleService.getIdByLink(articleLink)
-                    .flatMap { article =>
-                      setArticleWords(article, articleResponse.get.article)
-                        .flatMap { updatedArticle =>
-                          setStatsForArticle(updatedArticle)
-                            .flatMap { _ =>
-                              Future(MainServiceResponse(
-                                true,
-                                Some("article"),
-                                Some(article._id.toString)
-                              ))
-                            }
-                        }
+                  setStatsForArticle(article._id, words)
+                    .flatMap { _ =>
+                      Future(MainServiceResponse(
+                        true,
+                        Some("article"),
+                        Some(article._id.toString)
+                      ))
                     }
                 }
             }
@@ -146,7 +141,7 @@ class MainService {
       case Nil => map
     }
 
-  def setArticleWords(article: Article, text: String): Future[Article] = {
+  def setArticleWords(text: String): List[WordStat] = {
     val initList = text
       .replaceAll("[`*{}\\[\\]()>#+:~'%^&@<?;,\"!$=|./’]", " ")
       .replaceAll("\n", " ")
@@ -156,59 +151,27 @@ class MainService {
       .split(" ")
       .filter(x => x.length > 3)
       .toList
-
     val finalMap: Map[String, Int] = calcRepeating(initList, Map.empty)
-
     val finalList: List[WordStat] =
       finalMap
         .map(x => WordStat(x._1, x._2))
         .toList
-
-    articleService.addSomeStatsWordToArticle(article._id.toString, finalList)
-      .map {
-        case Right(x) => x
-      }
-
-    //    articleService.getIdByLink(article.link.toString)
-    //      .flatMap { updatedArticle =>
-    //        println("kek0 " + updatedArticle)
-    //        Future(updatedArticle)
-    //      }
-
-    //translateWord(x).map { y =>
-    //    wordService.addWord(WordParams(
-    //      Some(x),
-    //      Some(y),
-    //      None))}}
+    finalList
   }
 
-  def setStatsForArticle(article: Article): Future[Unit] = {
+  def setStatsForArticle(articleId: ObjectId, rightWords: List[WordStat]): Future[Boolean] = {
     wordCollectionService.getAllWordCollections.map {
       case Right(x) =>
         x.map { collection =>
-          //init stat of this collection
-          println("pidor " + collection)
-          println("pidor2 " + article)
           articleService.addStatToArticle(
-            article._id.toString,
+            articleId.toString,
             collection._id.toString,
-            0
+            rightWords.count(x => collection.words.contains(x.word))
+              * 100 / collection.words.length
           )
-            .flatMap { _ =>
-              article.words.map { word =>
-                wordService.getWordByTitle(word.word).map { wordData =>
-                  if (collection.words.contains(wordData._id.toString)) {
-                    articleService.updateStatToArticle(
-                      article._id.toString,
-                      collection._id.toString,
-                      100 / collection.words.length
-                    )
-                  }
-                }
-              }
-              Future(true)
-            }
         }
+    }.flatMap { _ =>
+      Future(true)
     }
   }
 

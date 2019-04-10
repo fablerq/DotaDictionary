@@ -3,12 +3,48 @@ package com.fablerq.dd.services
 import com.fablerq.dd.models._
 import com.fablerq.dd.repositories.ArticleRepository
 import org.bson.types.ObjectId
+import org.mongodb.scala.Completed
 import org.mongodb.scala.bson.ObjectId
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class ArticleService(articleRepository: ArticleRepository) {
+trait ArticleService {
+  //main functions for articles
+  def getAllArticles: Future[Either[ServiceResponse, Seq[Article]]]
+  def getArticle(id: String): Future[Either[ServiceResponse, Article]]
+  def getArticleByTitle(title: String): Future[Either[ServiceResponse, Article]]
+  def setArticleTitle(title: String): String
+  def getIdByLink(link: String): Future[Article]
+  def addArticleDirectly(article: Article): Future[Boolean]
+  def addArticle(params: ArticleParams): Future[ServiceResponse]
+  def updateArticleLink(params: ArticleParams): Future[ServiceResponse]
+  def deleteArticle(id: String): Future[ServiceResponse]
+  def deleteArticleByTitle(title: String): Future[ServiceResponse]
+  //words for article
+  def addStatWordToArticle(article: String, word: String): Future[ServiceResponse]
+  def addSomeStatsWordToArticle(
+    article: String,
+    list: List[WordStat]
+  ): Future[Either[ServiceResponse, Article]]
+  def updateWordStatForArticle(article: String, word: String): Future[ServiceResponse]
+  def deleteStatWordFromArticle(article: String, word: String): Future[ServiceResponse]
+  //stats for article
+  def addStatToArticle(
+    article: String,
+    collectionId: String,
+    percent: Int
+  ): Future[ServiceResponse]
+  def updateStatToArticle(
+    article: String,
+    collectionId: String,
+    partOfPercent: Int
+  ): Future[ServiceResponse]
+  def deleteStatFromArticle(article: String, collectionId: String): Future[ServiceResponse]
+}
+
+class ArticleServiceImpl(articleRepository: ArticleRepository)
+    extends ArticleService {
 
   def getAllArticles: Future[Either[ServiceResponse, Seq[Article]]] = {
     articleRepository.getAll.map {
@@ -35,8 +71,21 @@ class ArticleService(articleRepository: ArticleRepository) {
     }
   }
 
+  def setArticleTitle(title: String): String = {
+    if (title == " ") "Unknown article"
+    else title
+  }
+
+  def getIdByLink(link: String): Future[Article] =
+    articleRepository.getByLink(link)
+
+  def addArticleDirectly(article: Article): Future[Boolean] =
+    articleRepository.addArticle(article).flatMap { _ =>
+      Future(true)
+    }
+
   def addArticle(params: ArticleParams): Future[ServiceResponse] = params match {
-    case ArticleParams(Some(title), Some(link), None) =>
+    case ArticleParams(None, Some(title), Some(link), None) =>
       articleRepository.getByLink(link).map {
         case _: Article =>
           ServiceResponse(
@@ -49,6 +98,20 @@ class ArticleService(articleRepository: ArticleRepository) {
           ))
           ServiceResponse(true, "Статья успешно добавлена")
       }
+    case ArticleParams(Some(id), Some(title), Some(link), None) =>
+      val objectId = new ObjectId(id)
+      articleRepository.getByLink(link).map {
+        case _: Article =>
+          ServiceResponse(
+            false, s"Статья с этой ссылки ${params.link} уже добавлена"
+          )
+        case _ =>
+          articleRepository.addArticle(Article.apply(
+            objectId, title,
+            List(), link, List()
+          ))
+          ServiceResponse(true, "Статья успешно добавлена")
+      }
     case _ =>
       Future(ServiceResponse(
         false, s"Статью ${params.title} не удалось добавить. Неверный запрос"
@@ -56,7 +119,7 @@ class ArticleService(articleRepository: ArticleRepository) {
   }
 
   def updateArticleLink(params: ArticleParams): Future[ServiceResponse] = params match {
-    case ArticleParams(Some(title), Some(link), None) =>
+    case ArticleParams(None, Some(title), Some(link), None) =>
       articleRepository.getByTitle(title).map {
         case article: Article =>
           articleRepository.updateArticleLink(article._id, params.link.get)
@@ -110,7 +173,10 @@ class ArticleService(articleRepository: ArticleRepository) {
     } else Future(ServiceResponse(false, "Неверный запрос!"))
   }
 
-  def addSomeStatsWordToArticle(article: String, list: List[WordStat]): Future[Either[ServiceResponse, Article]] = {
+  def addSomeStatsWordToArticle(
+    article: String,
+    list: List[WordStat]
+  ): Future[Either[ServiceResponse, Article]] = {
     if (ObjectId.isValid(article)) {
       val objectId = new ObjectId(article)
       articleRepository.addSomeStatsWordToArticle(objectId, list).map {
@@ -160,7 +226,11 @@ class ArticleService(articleRepository: ArticleRepository) {
     } else Future(ServiceResponse(false, "Неверный запрос!"))
   }
 
-  def addStatToArticle(article: String, collectionId: String, percent: Int): Future[ServiceResponse] = {
+  def addStatToArticle(
+    article: String,
+    collectionId: String,
+    percent: Int
+  ): Future[ServiceResponse] = {
     if (ObjectId.isValid(article) & ObjectId.isValid(collectionId)) {
       val objectIdArticle = new ObjectId(article)
       articleRepository.getById(objectIdArticle).map {
@@ -185,6 +255,7 @@ class ArticleService(articleRepository: ArticleRepository) {
     collectionId: String,
     partOfPercent: Int
   ): Future[ServiceResponse] = {
+
     if (ObjectId.isValid(article) & ObjectId.isValid(collectionId)) {
       val objectIdArticle = new ObjectId(article)
       articleRepository.getById(objectIdArticle).map {
@@ -230,11 +301,4 @@ class ArticleService(articleRepository: ArticleRepository) {
     } else Future(ServiceResponse(false, "Неверный запрос!"))
   }
 
-  def setArticleTitle(title: String): String = {
-    if (title == " ") "Unknown article"
-    else title
-  }
-
-  def getIdByLink(link: String): Future[Article] =
-    articleRepository.getByLink(link)
 }

@@ -7,31 +7,14 @@ import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import com.fablerq.dd.Server.httpService
 import org.json4s.jackson.Serialization.write
 import org.scalatest._
 import com.fablerq.dd.configs.Mongo.{ codecRegistry, database }
 import com.fablerq.dd.models._
 import com.fablerq.dd.services.HttpService
 import com.fablerq.dd.configs.Json4sSupport._
-import org.mongodb.scala.bson.ObjectId
-import org.mongodb.scala.bson.collection.mutable.Document
-import org.mongodb.scala.model.Updates._
-import com.fablerq.dd.services._
-
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.util.{ Failure, Success }
 import com.fablerq.dd.models.WordCollection
-import com.fablerq.dd.repositories.WordCollectionRepository
-import org.mongodb.scala.{ Completed, MongoCollection }
 import org.mongodb.scala.bson.ObjectId
-import org.mongodb.scala.bson.collection.mutable.Document
-import org.mongodb.scala.model.Filters._
-import org.mongodb.scala.model.Updates._
-import org.mongodb.scala.result.{ DeleteResult, UpdateResult }
-
-import scala.concurrent.Future
 
 class MainTests extends AsyncFlatSpec with Matchers {
 
@@ -53,6 +36,20 @@ class MainTests extends AsyncFlatSpec with Matchers {
   Http().bindAndHandle(httpService.routes, "0.0.0.0", 8080)
 
   database.drop().toFuture()
+
+  //============================
+
+  behavior of "Unit tests"
+
+  val text = "Jack _ + go go until &plus seven 7, river Jack Jack"
+  val result: List[WordStat] = List(
+    WordStat("plus", 1), WordStat("jack", 3), WordStat("river", 1),
+    WordStat("until", 1), WordStat("seven", 1)
+  )
+
+  it should "process input text to right text" in {
+    httpService.mainService.setArticleWords(text) shouldBe result
+  }
 
   //============================
 
@@ -162,8 +159,10 @@ class MainTests extends AsyncFlatSpec with Matchers {
   behavior of "Article"
 
   val articleParams = ArticleParams(
+    None,
     Some("article1"),
-    Some("www.")
+    Some("www."),
+    None
   )
 
   val article = Article(
@@ -276,4 +275,5 @@ class MainTests extends AsyncFlatSpec with Matchers {
       .flatMap(Unmarshal(_).to[MainServiceResponse])
       .map { x => x.responseType shouldBe Some("article") }
   }
+
 }

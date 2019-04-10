@@ -8,17 +8,13 @@ import org.mongodb.scala.model.Filters.equal
 import org.mongodb.scala.model.Updates._
 import org.mongodb.scala.result.{ DeleteResult, UpdateResult }
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class ArticleRepository(articleCollection: MongoCollection[Article]) {
 
-  //val articleCollection = Mongo.getArticleCollection
-
   def count = articleCollection.count().toFuture()
 
   def getAll =
-    //articleCollection.find(descending("words")).toFuture()
     articleCollection.find().toFuture()
 
   def getByTitle(title: String): Future[Article] =
@@ -49,15 +45,11 @@ class ArticleRepository(articleCollection: MongoCollection[Article]) {
   def deleteArticle(id: ObjectId): Future[DeleteResult] =
     articleCollection.deleteOne(Document("_id" -> id)).toFuture()
 
-  def addSomeStatsWordToArticle(id: ObjectId, list: List[WordStat]): Future[Article] = {
+  def addSomeStatsWordToArticle(id: ObjectId, list: List[WordStat]): Future[UpdateResult] = {
     articleCollection.updateOne(
       Document("_id" -> id),
       addEachToSet("words", list.map(r => r): _*)
     ).toFuture()
-      .flatMap { _ =>
-        getById(id)
-          .map(x => x)
-      }
   }
 
   def addStatWordToArticle(id: ObjectId, wordStat: WordStat): Future[UpdateResult] = {

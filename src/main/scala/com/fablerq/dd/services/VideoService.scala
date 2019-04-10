@@ -8,7 +8,21 @@ import org.mongodb.scala.bson.ObjectId
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class VideoService(videoRepository: VideoRepository) {
+trait VideoService {
+  def getAllVideos: Future[Either[ServiceResponse, Seq[Video]]]
+  def getVideo(id: String): Future[Either[ServiceResponse, Video]]
+  def addVideo(params: VideoParams): Future[ServiceResponse]
+  def updateVideoDescription(params: VideoParams): Future[ServiceResponse]
+  def deleteVideo(id: String): Future[ServiceResponse]
+  def deleteStatFromVideo(video: String, stat: String): Future[ServiceResponse]
+  def addStatToVideo(
+    video: String,
+    collectionId: String,
+    percent: Int
+  ): Future[ServiceResponse]
+}
+
+class VideoServiceImpl(videoRepository: VideoRepository) extends VideoService {
 
   def getAllVideos: Future[Either[ServiceResponse, Seq[Video]]] = {
     videoRepository.getAll.map {
@@ -72,27 +86,39 @@ class VideoService(videoRepository: VideoRepository) {
     } else Future(ServiceResponse(false, "Неверный запрос!"))
   }
 
-  def deleteStatFromVideo(video: String, stat: String): Future[ServiceResponse] = {
-    if (ObjectId.isValid(video) & ObjectId.isValid(stat)) {
+  def deleteStatFromVideo(video: String, collectionId: String): Future[ServiceResponse] = {
+    if (ObjectId.isValid(video) & ObjectId.isValid(collectionId)) {
       val objectId = new ObjectId(video)
       videoRepository.getById(objectId).map {
-        case _: Video =>
-          videoRepository.deleteStatFromVideo(objectId, stat)
-          ServiceResponse(false, s"Статистика успешна удалена")
+        case video: Video =>
+          if (video.stats.exists(_.collectionId == collectionId)) {
+            videoRepository.deleteStatFromVideo(objectId, collectionId)
+            ServiceResponse(false, s"Статистика успешна удалена")
+          } else {
+            ServiceResponse(false, s"Статистика в видео отсутствует")
+          }
         case _ =>
           ServiceResponse(false, s"Видео $video не существует")
       }
     } else Future(ServiceResponse(false, "Неверный запрос!"))
   }
 
-  def addStatToVideo(video: String, collectionId: String, percent: Int): Future[ServiceResponse] = {
+  def addStatToVideo(
+    video: String,
+    collectionId: String,
+    percent: Int
+  ): Future[ServiceResponse] = {
     if (ObjectId.isValid(video) & ObjectId.isValid(collectionId)) {
       val objectIdVideo = new ObjectId(video)
       videoRepository.getById(objectIdVideo).map {
-        case _: Video =>
-          val stat = new Stat(collectionId, percent)
-          videoRepository.addStatToVideo(objectIdVideo, stat)
-          ServiceResponse(false, s"Статистика успешно добавлена")
+        case video: Video =>
+          if (video.stats.exists(_.collectionId == collectionId)) {
+            ServiceResponse(false, s"Статистика в видео уже присутствует")
+          } else {
+            val stat = new Stat(collectionId, percent)
+            videoRepository.addStatToVideo(objectIdVideo, stat)
+            ServiceResponse(false, s"Статистика успешно добавлена")
+          }
         case _ =>
           ServiceResponse(false, s"Не удалось добавить статистику. Видео с id $video не найдено")
       }

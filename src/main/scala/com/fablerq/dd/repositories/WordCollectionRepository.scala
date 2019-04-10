@@ -39,17 +39,17 @@ class WordCollectionRepository(wordCollectionCollection: MongoCollection[WordCol
   def deleteWordCollection(id: ObjectId): Future[DeleteResult] =
     wordCollectionCollection.deleteOne(Document("_id" -> id)).toFuture()
 
-  def addWordToWordCollection(id: ObjectId, wordId: String): Future[UpdateResult] = {
+  def addWordToWordCollection(id: ObjectId, word: String): Future[UpdateResult] = {
     wordCollectionCollection.updateOne(
       Document("_id" -> id),
-      addToSet("words", wordId)
+      addToSet("words", word)
     ).toFuture()
   }
 
-  def deleteWordToWordCollection(id: ObjectId, wordId: String): Future[UpdateResult] = {
+  def deleteWordToWordCollection(id: ObjectId, word: String): Future[UpdateResult] = {
     wordCollectionCollection.updateOne(
       Document("_id" -> id),
-      pullByFilter(Document("words" -> wordId))
+      pullByFilter(Document("words" -> word))
     ).toFuture()
   }
 }

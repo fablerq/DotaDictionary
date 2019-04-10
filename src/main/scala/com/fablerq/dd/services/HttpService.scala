@@ -7,35 +7,41 @@ import org.mongodb.scala.MongoDatabase
 
 class HttpService(database: MongoDatabase) {
 
+  val wordService =
+    new WordServiceImpl(
+      new WordRepository(database.getCollection("words"))
+    )
+
   val wordRoutes =
-    new WordRoutes(
-      new WordService(
-        new WordRepository(database.getCollection("words"))
+    new WordRoutes(wordService)
+
+  val wordCollectionService =
+    new WordCollectionServiceImpl(
+      new WordCollectionRepository(
+        database.getCollection("wordcollections")
       )
     )
 
-  val wordCollectionRoutes =
-    new WordCollectionRoutes(
-      new WordCollectionService(
-        new WordCollectionRepository(database.getCollection("wordcollections"))
-      )
-    )
+  val wordCollectionRoutes = new WordCollectionRoutes(wordCollectionService)
 
   val videoRoutes =
     new VideoRoutes(
-      new VideoService(
+      new VideoServiceImpl(
         new VideoRepository(database.getCollection("videos"))
       )
     )
 
-  val articleRoutes =
-    new ArticleRoutes(
-      new ArticleService(
-        new ArticleRepository(database.getCollection("articles"))
-      )
+  val articleService =
+    new ArticleServiceImpl(
+      new ArticleRepository(database.getCollection("articles"))
     )
 
-  val mainRoutes = new MainRoutes(new MainService)
+  val articleRoutes = new ArticleRoutes(articleService)
+
+  val mainService = new MainServiceImpl(wordService, wordCollectionService, articleService)
+
+  val mainRoutes =
+    new MainRoutes(mainService)
 
   val routes =
     pathPrefix("api") {

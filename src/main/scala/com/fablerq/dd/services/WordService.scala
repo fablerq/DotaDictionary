@@ -8,7 +8,19 @@ import org.mongodb.scala.bson.ObjectId
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class WordService(wordRepository: WordRepository) {
+trait WordService {
+  def getAllWords: Future[Either[ServiceResponse, Seq[Word]]]
+  def getWordsByPage(page: Int): Future[Either[ServiceResponse, Seq[Word]]]
+  def getWord(id: String): Future[Either[ServiceResponse, Word]]
+  def getWordByTitle(title: String): Future[Word]
+  def addWord(params: WordParams): Future[ServiceResponse]
+  def updateWordTranslate(params: WordParams): Future[ServiceResponse]
+  def deleteWord(id: String): Future[ServiceResponse]
+  def deleteWordByTitle(title: String): Future[ServiceResponse]
+  def updateQuantity(id: String): Future[ServiceResponse]
+}
+
+class WordServiceImpl(wordRepository: WordRepository) extends WordService {
 
   def getAllWords: Future[Either[ServiceResponse, Seq[Word]]] = {
     wordRepository.getAll.map {
