@@ -1,5 +1,6 @@
 package com.fablerq.dd.services
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, Uri }
@@ -7,8 +8,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.fablerq.dd.models._
 import com.fablerq.dd.configs.Json4sSupport._
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ ExecutionContext, Future }
 import com.fablerq.dd.Server.system
 import com.fablerq.dd.Server.materializer
 import org.mongodb.scala.bson.ObjectId
@@ -29,6 +29,11 @@ class MainServiceImpl(
     wordCollectionService: WordCollectionService,
     articleService: ArticleService
 ) extends MainService {
+
+  //иначе ошибка Error during processing of request: system must not be null!
+  //до правок все работало
+  implicit val system: ActorSystem = ActorSystem("DD")
+  implicit val executor: ExecutionContext = system.dispatcher
 
   def defineRequest(request: String): Future[MainServiceResponse] = {
     val ValidURlRequest = "^(https?)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]".r
