@@ -1,3 +1,10 @@
 language: scala
 scala:
-  - 2.12.6
+- 2.12.6
+deploy:
+  provider: heroku
+  api_key:
+    secure: BtzHzTdPhOCUpLqHNXExQaUwNY7xqLpT+xlOeC+Ulva65YYIcZSSn11HDO4ZdsNGYyB5W08qAo+T4/KGtqXGcdTq15ZRL98XkVzw5U2NFfPik7IYMCohUiK1n5Z71LqbC/k6g5ZFYgiFox2xJjMW+CoKT/44YBZ9aJC5iyZg4MEZZMhHu6UukWlYju6I5AyPtRyEDptWUE1j8OY5nhQpJ179M0yIMoyUYofvkmMqo9SADMjegBzg3SQXpsmFaQS7CgDpZm7+GmM3KkB+Zd4vsH9DTA3Q5GKYa1B2Gx4byAs7DPXULuk/VM+Hq4tPLq+JN0fUJDIgBut/O95FZtkcmcLtPTouECQUBdklhSSiQkO6GzHfxO4IhXp1VEJlR8z3lkXuZZgRMzFF0ToWxzqrNZc3kL92MaSgtcV9AOhML7jJFJrG8cwmhg1RBrgaJAVKwtDdQmNdHPU5DSIxir7FRhcW4w9K0OrlSpqYlLa2FofcRLV9SN1bRg+IsF3U9E9PzHj/eIbm/ySWg5XvA2ezQP4Ea++pSp1s8EmQR4+y/NzF9xp7HJm+2NqpGnNlPSzEiUOdujlG1liB2YkzT+zZ1VZgNpDFq7zEEFPzQUWJ8ekwUgt4PGOtw4sdmCTMEdiGG8fQxn41acyK5pha9dE+QQ7tLMBet6K+MisYq+k6prs=
+  app: dota-dictionary
+  on:
+    repo: fablerq/DotaDictionary
