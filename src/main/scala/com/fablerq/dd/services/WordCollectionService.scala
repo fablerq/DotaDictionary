@@ -11,7 +11,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 trait WordCollectionService {
   def getAllWordCollections: Future[Either[ServiceResponse, Seq[WordCollection]]]
   def getWordCollection(id: String): Future[Either[ServiceResponse, WordCollection]]
-  def getWordCollectionByTitle(title: String): Future[Either[ServiceResponse, WordCollection]]
   def addWordCollection(params: WordCollectionParams): Future[ServiceResponse]
   def updateWordCollectionDescription(params: WordCollectionParams): Future[ServiceResponse]
   def deleteWordCollection(id: String): Future[ServiceResponse]
@@ -40,15 +39,6 @@ class WordCollectionServiceImpl(wordCollectionRepository: WordCollectionReposito
           Left(ServiceResponse(false, "Коллекция слов не найдена!"))
       }
     } else Future(Left(ServiceResponse(false, "Неверный запрос!")))
-  }
-
-  def getWordCollectionByTitle(title: String): Future[Either[ServiceResponse, WordCollection]] = {
-    wordCollectionRepository.getByTitle(title).map {
-      case wordCollection: WordCollection =>
-        Right(wordCollection)
-      case _ =>
-        Left(ServiceResponse(false, "Коллекция слов не найдена!"))
-    }
   }
 
   def addWordCollection(params: WordCollectionParams): Future[ServiceResponse] = params match {

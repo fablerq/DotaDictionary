@@ -13,33 +13,18 @@ trait ArticleService {
   //main functions for articles
   def getAllArticles: Future[Either[ServiceResponse, Seq[Article]]]
   def getArticle(id: String): Future[Either[ServiceResponse, Article]]
-  def getArticleByTitle(title: String): Future[Either[ServiceResponse, Article]]
   def setArticleTitle(title: String): String
   def getIdByLink(link: String): Future[Article]
   def addArticleDirectly(article: Article): Future[Boolean]
   def addArticle(params: ArticleParams): Future[ServiceResponse]
   def updateArticleLink(params: ArticleParams): Future[ServiceResponse]
   def deleteArticle(id: String): Future[ServiceResponse]
-  def deleteArticleByTitle(title: String): Future[ServiceResponse]
   //words for article
   def addStatWordToArticle(article: String, word: String): Future[ServiceResponse]
-  def addSomeStatsWordToArticle(
-    article: String,
-    list: List[WordStat]
-  ): Future[Either[ServiceResponse, Article]]
   def updateWordStatForArticle(article: String, word: String): Future[ServiceResponse]
   def deleteStatWordFromArticle(article: String, word: String): Future[ServiceResponse]
   //stats for article
-  def addStatToArticle(
-    article: String,
-    collectionId: String,
-    percent: Int
-  ): Future[ServiceResponse]
-  def updateStatToArticle(
-    article: String,
-    collectionId: String,
-    partOfPercent: Int
-  ): Future[ServiceResponse]
+  def addStatToArticle(article: String, collectionId: String, percent: Int): Future[ServiceResponse]
   def deleteStatFromArticle(article: String, collectionId: String): Future[ServiceResponse]
 }
 
@@ -61,14 +46,6 @@ class ArticleServiceImpl(articleRepository: ArticleRepository)
         case _ => Left(ServiceResponse(false, "Статья не найдена!"))
       }
     } else Future(Left(ServiceResponse(false, "Неверный запрос!")))
-  }
-
-  def getArticleByTitle(title: String): Future[Either[ServiceResponse, Article]] = {
-    articleRepository.getByTitle(title).map {
-      case article: Article => Right(article)
-      case _ =>
-        Left(ServiceResponse(false, "Статья не найдена!"))
-    }
   }
 
   def setArticleTitle(title: String): String = {
@@ -146,16 +123,6 @@ class ArticleServiceImpl(articleRepository: ArticleRepository)
     } else Future(ServiceResponse(false, "Неверный запрос!"))
   }
 
-  def deleteArticleByTitle(title: String): Future[ServiceResponse] = {
-    articleRepository.getByTitle(title).map {
-      case article: Article =>
-        articleRepository.deleteArticle(article._id)
-        ServiceResponse(true, "Статья успешно удалена")
-      case _ =>
-        ServiceResponse(false, "Не удалось удалить статью")
-    }
-  }
-
   def addStatWordToArticle(article: String, word: String): Future[ServiceResponse] = {
     if (ObjectId.isValid(article)) {
       val objectId = new ObjectId(article)
@@ -171,21 +138,6 @@ class ArticleServiceImpl(articleRepository: ArticleRepository)
           ServiceResponse(false, s"Статья $article не существует")
       }
     } else Future(ServiceResponse(false, "Неверный запрос!"))
-  }
-
-  def addSomeStatsWordToArticle(
-    article: String,
-    list: List[WordStat]
-  ): Future[Either[ServiceResponse, Article]] = {
-    if (ObjectId.isValid(article)) {
-      val objectId = new ObjectId(article)
-      articleRepository.addSomeStatsWordToArticle(objectId, list).map {
-        case article: Article => Right(article)
-        case _ => Left(
-          ServiceResponse(false, s"Не получилось добавить статистику")
-        )
-      }
-    } else Future(Left(ServiceResponse(false, "Неверный запрос!")))
   }
 
   def updateWordStatForArticle(article: String, word: String): Future[ServiceResponse] = {
@@ -243,40 +195,6 @@ class ArticleServiceImpl(articleRepository: ArticleRepository)
               Stat(collectionId, percent)
             )
             ServiceResponse(true, s"Статистика успешно добавлена")
-          }
-        case _ =>
-          ServiceResponse(false, s"Статья $article не существует")
-      }
-    } else Future(ServiceResponse(false, "Неверный запрос!"))
-  }
-
-  def updateStatToArticle(
-    article: String,
-    collectionId: String,
-    partOfPercent: Int
-  ): Future[ServiceResponse] = {
-
-    if (ObjectId.isValid(article) & ObjectId.isValid(collectionId)) {
-      val objectIdArticle = new ObjectId(article)
-      articleRepository.getById(objectIdArticle).map {
-        case article: Article =>
-          //if this article if exists
-          if (article.stats.exists(_.collectionId == collectionId)) {
-            articleRepository.deleteStatFromArticle(objectIdArticle, collectionId)
-            //plus new part of percent to old percent value
-            articleRepository.addStatToArticle(
-              objectIdArticle,
-              Stat(
-                collectionId,
-                article.stats
-                  .find(_.collectionId == collectionId)
-                  .get
-                  .percent + partOfPercent
-              )
-            )
-            ServiceResponse(true, s"Статистика успешно обновлена")
-          } else {
-            ServiceResponse(false, s"Статистика в статье не найдена")
           }
         case _ =>
           ServiceResponse(false, s"Статья $article не существует")
