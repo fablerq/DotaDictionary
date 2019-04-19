@@ -3,6 +3,7 @@ scala:
 - 2.12.6
 install:
   - pip install
+  - pip install requests[security]
   - pip install --upgrade youtube_dl
 deploy:
   provider: heroku
