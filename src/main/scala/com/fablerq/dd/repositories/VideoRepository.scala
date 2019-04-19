@@ -23,10 +23,12 @@ class VideoRepository(videoCollection: MongoCollection[Video]) {
       .first()
       .toFuture()
 
-  def getById(id: ObjectId): Future[Video] =
+  def getById(id: ObjectId): Future[Video] = {
     videoCollection
       .find(Document("_id" -> id))
-      .first().toFuture()
+      .first()
+      .toFuture()
+  }
 
   def getByLink(id: String): Future[Video] =
     videoCollection

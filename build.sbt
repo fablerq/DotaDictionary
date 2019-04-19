@@ -22,6 +22,7 @@ lazy val root = (project in file("."))
 
         "org.json4s" %% "json4s-jackson" % "3.6.5",
         "io.circe" %% "circe-generic" % "0.9.3",
+        "net.liftweb" %% "lift-json" % "3.3.0",
 
         "ch.qos.logback" % "logback-classic" % "1.2.3",
         "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0",

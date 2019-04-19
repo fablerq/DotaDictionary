@@ -11,7 +11,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 trait VideoService {
   def getAllVideos: Future[Either[ServiceResponse, Seq[Video]]]
   def getVideo(id: String): Future[Either[ServiceResponse, Video]]
+  def getIdByLink(link: String): Future[Video]
   def addVideo(params: VideoParams): Future[ServiceResponse]
+  def addVideoDirectly(video: Video): Future[Boolean]
   def updateVideoDescription(params: VideoParams): Future[ServiceResponse]
   def deleteVideo(id: String): Future[ServiceResponse]
   def deleteStatFromVideo(video: String, stat: String): Future[ServiceResponse]
@@ -36,12 +38,24 @@ class VideoServiceImpl(videoRepository: VideoRepository) extends VideoService {
     if (ObjectId.isValid(id)) {
       val objectId = new ObjectId(id)
       videoRepository.getById(objectId).map {
-        case video: Video => Right(video)
+        case video: Video =>
+          val words: List[WordStat] = video.words.sortBy(-_.count)
+          Right(Video(
+            video._id,
+            video.title,
+            video.description,
+            words,
+            video.link,
+            video.stats
+          ))
         case _ =>
           Left(ServiceResponse(false, "Видео не найдено!"))
       }
     } else Future(Left(ServiceResponse(false, "Неверный запрос!")))
   }
+
+  def getIdByLink(link: String): Future[Video] =
+    videoRepository.getByLink(link)
 
   def addVideo(params: VideoParams): Future[ServiceResponse] = params match {
     case VideoParams(Some(title), Some(description), Some(link), None) =>
@@ -51,12 +65,18 @@ class VideoServiceImpl(videoRepository: VideoRepository) extends VideoService {
         case _ =>
           videoRepository.addVideo(Video.apply(
             new ObjectId(), title,
-            description, link, List()
+            description, List(), link, List()
           ))
           ServiceResponse(true, "Видео успешно успешно добавлено")
       }
     case _ => Future(ServiceResponse(false, s"Видео ${params.title} " +
       s"не удалось добавить. Неверный запрос"))
+  }
+
+  def addVideoDirectly(video: Video): Future[Boolean] = {
+    videoRepository.addVideo(video).flatMap { _ =>
+      Future(true)
+    }
   }
 
   def updateVideoDescription(params: VideoParams): Future[ServiceResponse] = params match {

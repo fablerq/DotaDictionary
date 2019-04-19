@@ -6,6 +6,11 @@ import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, Uri }
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.fablerq.dd.models._
 import com.fablerq.dd.configs.Json4sSupport._
+import net.liftweb.json._
+
+import sys.process._
+import scala.io.Source
+import java.nio.file.{ Files, Paths }
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -15,32 +20,55 @@ import org.mongodb.scala.bson.ObjectId
 
 trait MainService {
   def defineRequest(request: String): Future[MainServiceResponse]
+  def setWords(text: String): List[WordStat]
   def handlingWord(word: String): Future[MainServiceResponse]
   def translateWord(word: String): Future[String]
   def handlingArticle(articleLink: String): Future[MainServiceResponse]
-  def calcRepeating(list: List[String], map: Map[String, Int]): Map[String, Int]
-  def setArticleWords(text: String): List[WordStat]
   def setStatsForArticle(articleId: ObjectId, rightWords: List[WordStat]): Future[Boolean]
   def handlingVideo(videoLink: String): Future[MainServiceResponse]
+  def setStatsForVideo(videoId: ObjectId, rightWords: List[WordStat]): Future[Boolean]
 }
 
 class MainServiceImpl(
     wordService: WordService,
     wordCollectionService: WordCollectionService,
-    articleService: ArticleService
+    articleService: ArticleService,
+    videoService: VideoService
 ) extends MainService {
 
   def defineRequest(request: String): Future[MainServiceResponse] = {
     val ValidURlRequest = "^(https?)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]".r
     val ValidWordRequest = "[a-zA-Z]+".r
-    val ValidYoutubeRequest = "^(http(s)??\\:\\/\\/)?(www\\.)?((youtube\\.com\\/watch\\?v=)|(youtu.be\\/))([a-zA-Z0-9\\-_])+".r
+    val ValidYoutubeRequest = "^(https?\\:\\/\\/)?(www\\.youtube\\.com|youtu\\.?be)\\/.+$".r
 
     request match {
-      case ValidYoutubeRequest(_) => handlingVideo(request)
+      case x if x.matches(ValidYoutubeRequest.toString()) => handlingVideo(request)
       case ValidURlRequest(_) => handlingArticle(request)
       case ValidWordRequest() => handlingWord(request)
       case _ => Future(MainServiceResponse(false))
     }
+  }
+
+  def setWords(text: String): List[WordStat] = {
+    val initList: Map[String, Int] = text
+      .replaceAll("[`*{}\\[\\]()>#+:~'%^&@<?;,\"!$=|./’]", " ")
+      .replaceAll("\n", " ")
+      .replaceAll("\n\n", " ")
+      .replaceAll("\\d", " ")
+      .toLowerCase()
+      .split(" ")
+      .filter(x => x.length > 3)
+      .toList
+      .groupBy(identity)
+      .map { x =>
+        (x._1, x._2.length)
+      }
+
+    val finalList: List[WordStat] =
+      initList
+        .map(x => WordStat(x._1, x._2))
+        .toList
+    finalList
   }
 
   //=============================
@@ -105,7 +133,7 @@ class MainServiceImpl(
               ))
             .flatMap(Unmarshal(_).to[Option[ArticleResponse]])
             .flatMap { articleResponse =>
-              val words: List[WordStat] = setArticleWords(articleResponse.get.article)
+              val words: List[WordStat] = setWords(articleResponse.get.article)
               val article = Article(
                 new ObjectId(),
                 articleService.setArticleTitle(articleResponse.get.title),
@@ -133,41 +161,17 @@ class MainServiceImpl(
       }
   }
 
-  def calcRepeating(list: List[String], map: Map[String, Int]): Map[String, Int] =
-    list match {
-      case x :: y =>
-        if (map.keySet.contains(x)) calcRepeating(y, map ++ Map(x -> (map(x) + 1)))
-        else calcRepeating(y, map ++ Map(x -> 1))
-      case Nil => map
-    }
-
-  def setArticleWords(text: String): List[WordStat] = {
-    val initList = text
-      .replaceAll("[`*{}\\[\\]()>#+:~'%^&@<?;,\"!$=|./’]", " ")
-      .replaceAll("\n", " ")
-      .replaceAll("\n\n", " ")
-      .replaceAll("\\d", " ")
-      .toLowerCase()
-      .split(" ")
-      .filter(x => x.length > 3)
-      .toList
-    val finalMap: Map[String, Int] = calcRepeating(initList, Map.empty)
-    val finalList: List[WordStat] =
-      finalMap
-        .map(x => WordStat(x._1, x._2))
-        .toList
-    finalList
-  }
-
   def setStatsForArticle(articleId: ObjectId, rightWords: List[WordStat]): Future[Boolean] = {
     wordCollectionService.getAllWordCollections.map {
       case Right(x) =>
         x.map { collection =>
+          val count: Int =
+            if (collection.words.isEmpty) 1 else collection.words.length
           articleService.addStatToArticle(
             articleId.toString,
             collection._id.toString,
             rightWords.count(x => collection.words.contains(x.word))
-              * 100 / collection.words.length
+              * 100 / count
           )
         }
     }.flatMap { _ =>
@@ -180,11 +184,81 @@ class MainServiceImpl(
   //=============================
 
   def handlingVideo(videoLink: String): Future[MainServiceResponse] = {
-    Future(MainServiceResponse(
-      true,
-      Some("video"),
-      Some("not ready")
-    ))
+    videoService.getIdByLink(videoLink)
+      .flatMap { x =>
+        if (x == null) {
+          s"youtube-dl --write-info-json --skip-download $videoLink -o src/main/resources/info".!
+          s"youtube-dl --write-auto-sub --sub-lang en --skip-download $videoLink -o src/main/resources/subtitles".!
+          if (Files.exists(Paths.get("src/main/resources/subtitles.en.vtt"))) {
+            val subtitlesFile: String =
+              Source.fromFile("src/main/resources/subtitles.en.vtt")
+                .mkString
+                .substring(145)
+                .replaceAll("\\<.*?\\>", "")
+                .replaceAll("(?m)^[0-9].*", "")
+
+            val videoText: List[WordStat] =
+              setWords(subtitlesFile)
+                //cause of triple repetitions in vtt format
+                .filter(_.count % 3 == 0)
+                .map(x => WordStat(x.word, x.count / 3))
+
+            val videoInfoJson: JValue =
+              parse(Source.fromFile("src/main/resources/info.info.json").mkString)
+
+            //why List[()] not simple turple?
+            val videoInfo: List[(String, String)] = for {
+              JObject(x) <- videoInfoJson
+              JField("title", JString(title)) <- x
+              JField("description", JString(description)) <- x
+            } yield (title, description)
+
+            val video = Video(
+              new ObjectId(),
+              videoInfo.head._1,
+              videoInfo.head._2,
+              videoText,
+              videoLink,
+              List()
+            )
+
+            videoService.addVideoDirectly(video)
+              .flatMap { _ =>
+                setStatsForVideo(video._id, videoText)
+                  .flatMap { _ =>
+                    Future(MainServiceResponse(
+                      true,
+                      Some("video"),
+                      Some(video._id.toString)
+                    ))
+                  }
+              }
+          } else
+            Future(MainServiceResponse(false))
+        } else Future(MainServiceResponse(
+          true,
+          Some("article"),
+          Some(x._id.toString)
+        ))
+      }
+  }
+
+  def setStatsForVideo(videoId: ObjectId, rightWords: List[WordStat]): Future[Boolean] = {
+    wordCollectionService.getAllWordCollections.map {
+      case Right(x) =>
+        x.map { collection =>
+          val count: Int =
+            if (collection.words.isEmpty) 1 else collection.words.length
+          videoService.addStatToVideo(
+            videoId.toString,
+            collection._id.toString,
+            rightWords.count(x => collection.words.contains(x.word))
+              * 100 / count
+          )
+        }
+    }.flatMap { _ =>
+      Future(true)
+    }
   }
 
 }

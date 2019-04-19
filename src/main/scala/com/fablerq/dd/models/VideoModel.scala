@@ -6,6 +6,7 @@ case class Video(
   _id: ObjectId,
   title: String,
   description: String,
+  words: List[WordStat],
   link: String,
   stats: List[Stat]
 )

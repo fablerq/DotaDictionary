@@ -217,6 +217,7 @@ class MainTests extends AsyncFlatSpec with Matchers {
     new ObjectId(),
     "video1",
     "super video",
+    List(),
     "www.",
     List()
   )

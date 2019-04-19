@@ -42,7 +42,16 @@ class ArticleServiceImpl(articleRepository: ArticleRepository)
     if (ObjectId.isValid(id)) {
       val objectId = new ObjectId(id)
       articleRepository.getById(objectId).map {
-        case article: Article => Right(article)
+        case article: Article =>
+          val words: List[WordStat] = article.words.sortBy(-_.count)
+          Right(Article(
+            article._id,
+            article.title,
+            words,
+            article.link,
+            article.stats
+          ))
+          Right(article)
         case _ => Left(ServiceResponse(false, "Статья не найдена!"))
       }
     } else Future(Left(ServiceResponse(false, "Неверный запрос!")))
