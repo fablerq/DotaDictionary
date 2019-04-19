@@ -48,7 +48,7 @@ class MainTests extends AsyncFlatSpec with Matchers {
   )
 
   it should "process input text to right text" in {
-    httpService.mainService.setArticleWords(text) shouldBe result
+    httpService.mainService.setWords(text) shouldBe result
   }
 
   //============================
