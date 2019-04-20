@@ -12,22 +12,15 @@ lazy val root = (project in file("."))
       libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-actor"           % akkaVersion,
         "com.typesafe.akka" %% "akka-http"            % akkaHttpVersion,
-        "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
-        "com.typesafe.akka" %% "akka-http-xml"        % akkaHttpVersion,
         "com.typesafe.akka" %% "akka-stream"          % akkaVersion,
 
         "org.reactivestreams" % "reactive-streams" % "1.0.0",
         "ch.megard" %% "akka-http-cors" % "0.4.0",
-        "de.heikoseeberger" %% "akka-http-circe" % "1.20.1",
-
         "org.json4s" %% "json4s-jackson" % "3.6.5",
-        "io.circe" %% "circe-generic" % "0.9.3",
         "net.liftweb" %% "lift-json" % "3.3.0",
-
         "ch.qos.logback" % "logback-classic" % "1.2.3",
         "org.mongodb.scala" %% "mongo-scala-driver" % "2.1.0",
-
-
+        
         "org.scalatest"     %% "scalatest"            % "3.0.1"         % Test
       )
     )

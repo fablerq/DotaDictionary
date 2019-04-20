@@ -39,7 +39,7 @@ class MainTests extends AsyncFlatSpec with Matchers {
 
   //============================
 
-  behavior of "Unit tests"
+  behavior of "MainService"
 
   val text = "Jack _ + go go until &plus seven 7, river Jack Jack"
   val result: List[WordStat] = List(
@@ -230,7 +230,7 @@ class MainTests extends AsyncFlatSpec with Matchers {
         entity = HttpEntity(ContentTypes.`application/json`, write(videoParams))
       ))
       .flatMap(Unmarshal(_).to[ServiceResponse])
-      .map { x => x.message shouldBe "Видео успешно успешно добавлено" }
+      .map { x => x.message shouldBe "Видео успешно добавлено" }
   }
 
   it should "update first video" in {

@@ -14,7 +14,8 @@ trait ArticleService {
   def getAllArticles: Future[Either[ServiceResponse, Seq[Article]]]
   def getArticle(id: String): Future[Either[ServiceResponse, Article]]
   def setArticleTitle(title: String): String
-  def getIdByLink(link: String): Future[Article]
+  def getByIdDirectly(id: ObjectId): Future[Option[Article]]
+  def getIdByLink(link: String): Future[Option[Article]]
   def addArticleDirectly(article: Article): Future[Boolean]
   def addArticle(params: ArticleParams): Future[ServiceResponse]
   def updateArticleLink(params: ArticleParams): Future[ServiceResponse]
@@ -41,20 +42,20 @@ class ArticleServiceImpl(articleRepository: ArticleRepository)
   def getArticle(id: String): Future[Either[ServiceResponse, Article]] = {
     if (ObjectId.isValid(id)) {
       val objectId = new ObjectId(id)
-      articleRepository.getById(objectId).map {
-        case article: Article =>
-          val words: List[WordStat] = article.words.sortBy(-_.count)
-          Right(Article(
-            article._id,
-            article.title,
+      getByIdDirectly(objectId).flatMap {
+        case Some(x) =>
+          val words: List[WordStat] = x.words.sortBy(-_.count)
+          Future.successful(Right(Article(
+            x._id,
+            x.title,
             words,
-            article.link,
-            article.stats
-          ))
-          Right(article)
-        case _ => Left(ServiceResponse(false, "Статья не найдена!"))
+            x.link,
+            x.stats
+          )))
+        case None =>
+          Future.successful(Left(ServiceResponse(false, "Статья не найдена!")))
       }
-    } else Future(Left(ServiceResponse(false, "Неверный запрос!")))
+    } else Future.successful(Left(ServiceResponse(false, "Неверный запрос!")))
   }
 
   def setArticleTitle(title: String): String = {
@@ -62,59 +63,68 @@ class ArticleServiceImpl(articleRepository: ArticleRepository)
     else title
   }
 
-  def getIdByLink(link: String): Future[Article] =
-    articleRepository.getByLink(link)
+  def getByIdDirectly(id: ObjectId): Future[Option[Article]] =
+    articleRepository.getById(id).map { x =>
+      Option(x)
+    }
+
+  def getIdByLink(link: String): Future[Option[Article]] =
+    articleRepository.getByLink(link).map { x =>
+      Option(x)
+    }
 
   def addArticleDirectly(article: Article): Future[Boolean] =
-    articleRepository.addArticle(article).flatMap { _ =>
-      Future(true)
-    }
+    articleRepository.addArticle(article).map(_ => true)
 
   def addArticle(params: ArticleParams): Future[ServiceResponse] = params match {
     case ArticleParams(None, Some(title), Some(link), None) =>
-      articleRepository.getByLink(link).map {
-        case _: Article =>
-          ServiceResponse(
+      getIdByLink(link).flatMap {
+        case Some(x) =>
+          Future.successful(
+            ServiceResponse(
             false, s"Статья с этой ссылки ${params.link} уже добавлена"
-          )
-        case _ =>
+          ))
+        case None =>
           articleRepository.addArticle(Article.apply(
             new ObjectId(), title,
             List(), link, List()
-          ))
-          ServiceResponse(true, "Статья успешно добавлена")
+          )).map { x=>
+            ServiceResponse(true, "Статья успешно добавлена")
+          }
       }
     case ArticleParams(Some(id), Some(title), Some(link), None) =>
       val objectId = new ObjectId(id)
-      articleRepository.getByLink(link).map {
-        case _: Article =>
-          ServiceResponse(
-            false, s"Статья с этой ссылки ${params.link} уже добавлена"
-          )
-        case _ =>
+      getIdByLink(link).flatMap {
+        case None =>
+          Future.successful(
+            ServiceResponse(
+              false, s"Статья с этой ссылки ${params.link} уже добавлена"))
+        case Some(x) =>
           articleRepository.addArticle(Article.apply(
             objectId, title,
             List(), link, List()
-          ))
-          ServiceResponse(true, "Статья успешно добавлена")
+          )).map { x=>
+            ServiceResponse(true, "Статья успешно добавлена")
+          }
       }
     case _ =>
-      Future(ServiceResponse(
+      Future.successful(ServiceResponse(
         false, s"Статью ${params.title} не удалось добавить. Неверный запрос"
       ))
   }
 
   def updateArticleLink(params: ArticleParams): Future[ServiceResponse] = params match {
     case ArticleParams(None, Some(title), Some(link), None) =>
-      articleRepository.getByTitle(title).map {
-        case article: Article =>
-          articleRepository.updateArticleLink(article._id, params.link.get)
-          ServiceResponse(true, "Ссылка статьи успешно обновлена")
-        case _ =>
-          ServiceResponse(false, s"Статья $title не найдена")
+      getIdByLink(link).flatMap {
+        case Some(x) =>
+          articleRepository.updateArticleLink(x._id, params.link.get).map { x=>
+            ServiceResponse(true, "Ссылка статьи успешно обновлена")
+          }
+        case None =>
+          Future.successful(ServiceResponse(false, s"Статья $title не найдена"))
       }
     case _ =>
-      Future(ServiceResponse(
+      Future.successful(ServiceResponse(
         false, s"Статья ${params.title} не обновилась. Неверный запрос"
       ))
   }
@@ -122,110 +132,124 @@ class ArticleServiceImpl(articleRepository: ArticleRepository)
   def deleteArticle(id: String): Future[ServiceResponse] = {
     if (ObjectId.isValid(id)) {
       val objectId = new ObjectId(id)
-      articleRepository.getById(objectId).map {
-        case article: Article =>
-          articleRepository.deleteArticle(article._id)
-          ServiceResponse(true, "Статья успешно удалена")
-        case _ =>
-          ServiceResponse(false, "Не удалось удалить статью")
+      getByIdDirectly(objectId).flatMap {
+        case Some(x) =>
+          articleRepository.deleteArticle(x._id).map { x =>
+            ServiceResponse(true, "Статья успешно удалена")
+          }
+        case None =>
+          Future.successful(
+            ServiceResponse(false, "Не удалось удалить статью"))
       }
-    } else Future(ServiceResponse(false, "Неверный запрос!"))
+    } else Future.successful(ServiceResponse(false, "Неверный запрос!"))
   }
 
   def addStatWordToArticle(article: String, word: String): Future[ServiceResponse] = {
     if (ObjectId.isValid(article)) {
       val objectId = new ObjectId(article)
-      articleRepository.getById(objectId).map {
-        case article: Article =>
-          if (article.words.exists(_.word == word)) {
-            ServiceResponse(false, s"Данное слово в статье уже присутствует")
-          } else {
+      getByIdDirectly(objectId).flatMap {
+        case Some(x) =>
+          if (x.words.exists(_.word == word))
+            Future.successful(
+              ServiceResponse(false, s"Данное слово в статье уже присутствует"))
+          else {
             articleRepository.addStatWordToArticle(objectId, WordStat(word, 1))
-            ServiceResponse(true, s"Слово в статью успешно добавлена")
+              .map { x=>
+              ServiceResponse(true, s"Слово в статью успешно добавлена")
+            }
           }
         case _ =>
-          ServiceResponse(false, s"Статья $article не существует")
+          Future.successful(
+            ServiceResponse(false, s"Статья $article не существует"))
       }
-    } else Future(ServiceResponse(false, "Неверный запрос!"))
+    } else Future.successful(ServiceResponse(false, "Неверный запрос!"))
   }
 
   def updateWordStatForArticle(article: String, word: String): Future[ServiceResponse] = {
     if (ObjectId.isValid(article)) {
       val objectId = new ObjectId(article)
-      articleRepository.getById(objectId).map {
-        case article: Article =>
-          if (article.words.exists(_.word == word)) {
-            articleRepository.deleteStatWordFromArticle(objectId, word)
-            articleRepository.addStatWordToArticle(
-              objectId,
-              WordStat(word, article.words.find(_.word == word).get.count + 1)
-            )
-            ServiceResponse(true, "Количество повторений у слова обновлено")
-          } else {
-            ServiceResponse(false, s"Данное слово в статье не найдено")
+      getByIdDirectly(objectId).flatMap {
+        case Some(x) =>
+          if (x.words.exists(_.word == word)) {
+            articleRepository.deleteStatWordFromArticle(objectId, word).flatMap { _ =>
+              articleRepository.addStatWordToArticle(
+                objectId,
+                WordStat(word, x.words.find(_.word == word).get.count + 1)
+              ).map { _ =>
+                ServiceResponse(true, "Количество повторений у слова обновлено")
+              }
+            }
           }
-        case _ =>
-          ServiceResponse(false, "Количество повторений у слова не удалось обновить")
+          else
+            Future.successful(
+              ServiceResponse(false, s"Данное слово в статье не найдено"))
+        case None =>
+          Future.successful(
+            ServiceResponse(false, "Количество повторений у слова не удалось обновить"))
       }
-    } else Future(ServiceResponse(false, "Неверный запрос!"))
+    } else Future.successful(ServiceResponse(false, "Неверный запрос!"))
   }
 
   def deleteStatWordFromArticle(article: String, word: String): Future[ServiceResponse] = {
     if (ObjectId.isValid(article)) {
       val objectId = new ObjectId(article)
-      articleRepository.getById(objectId).map {
-        case article: Article =>
-          if (article.words.exists(_.word == word)) {
-            articleRepository.deleteStatWordFromArticle(objectId, word)
-            ServiceResponse(true, s"Слово в статье успешно удалено")
-          } else {
-            ServiceResponse(false, s"Данное слово в статье отсутствует")
-          }
-        case _ =>
-          ServiceResponse(false, s"Статья $article не существует")
+      getByIdDirectly(objectId).flatMap {
+        case Some(x) =>
+          if (x.words.exists(_.word == word))
+            articleRepository.deleteStatWordFromArticle(objectId, word).map { x=>
+                ServiceResponse(true, s"Слово в статье успешно удалено")
+            }
+          else
+            Future.successful(
+              ServiceResponse(false, s"Данное слово в статье отсутствует"))
+        case None =>
+          Future.successful(ServiceResponse(false, s"Статья $article не существует"))
       }
-    } else Future(ServiceResponse(false, "Неверный запрос!"))
+    } else Future.successful(ServiceResponse(false, "Неверный запрос!"))
   }
 
   def addStatToArticle(
     article: String,
     collectionId: String,
-    percent: Int
-  ): Future[ServiceResponse] = {
+    percent: Int): Future[ServiceResponse] = {
     if (ObjectId.isValid(article) & ObjectId.isValid(collectionId)) {
       val objectIdArticle = new ObjectId(article)
-      articleRepository.getById(objectIdArticle).map {
-        case article: Article =>
-          if (article.stats.exists(_.collectionId == collectionId)) {
-            ServiceResponse(false, s"Статистика в статье уже присутствует")
-          } else {
+      getByIdDirectly(objectIdArticle).flatMap {
+        case Some(x) =>
+          if (x.stats.exists(_.collectionId == collectionId))
+            Future.successful(
+              ServiceResponse(false, s"Статистика в статье уже присутствует"))
+          else
             articleRepository.addStatToArticle(
               objectIdArticle,
               Stat(collectionId, percent)
-            )
-            ServiceResponse(true, s"Статистика успешно добавлена")
-          }
-        case _ =>
-          ServiceResponse(false, s"Статья $article не существует")
+            ).map { x =>
+              ServiceResponse(true, s"Статистика успешно добавлена")
+            }
+        case None =>
+          Future.successful(
+            ServiceResponse(false, s"Статья $article не существует"))
       }
-    } else Future(ServiceResponse(false, "Неверный запрос!"))
+    } else Future.successful(ServiceResponse(false, "Неверный запрос!"))
   }
 
   def deleteStatFromArticle(article: String, collectionId: String): Future[ServiceResponse] = {
     if (ObjectId.isValid(article) & ObjectId.isValid(collectionId)) {
       val objectId = new ObjectId(article)
-      articleRepository.getById(objectId).map {
-        case article: Article =>
-          if (article.stats.exists(_.collectionId == collectionId)) {
-            articleRepository.deleteStatFromArticle(objectId, collectionId)
-            ServiceResponse(false, s"Статистика успешна удалена")
-          } else {
-            ServiceResponse(false, s"Статистика в статье отсутствует")
-          }
-        case _ =>
-          ServiceResponse(false, s"Статья $article не существует")
+      getByIdDirectly(objectId).flatMap {
+        case Some(x) =>
+          if (x.stats.exists(_.collectionId == collectionId))
+            articleRepository.deleteStatFromArticle(objectId, collectionId).map { x =>
+                ServiceResponse(false, s"Статистика успешна удалена")
+              }
+          else
+            Future.successful(
+              ServiceResponse(false, s"Статистика в статье отсутствует"))
+        case None =>
+          Future.successful(
+            ServiceResponse(false, s"Статья $article не существует"))
       }
-    } else Future(ServiceResponse(false, "Неверный запрос!"))
+    } else Future.successful(ServiceResponse(false, "Неверный запрос!"))
   }
 
 }
