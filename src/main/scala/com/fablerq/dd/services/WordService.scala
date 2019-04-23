@@ -25,7 +25,7 @@ class WordServiceImpl(wordRepository: WordRepository) extends WordService {
 
   def getAllWords: Future[Either[ServiceResponse, Seq[Word]]] = {
     wordRepository.getAll.map {
-      case x: Seq[Word] if x.nonEmpty => Right(x)
+      case x: Seq[Word] if x.nonEmpty => Right(x.sortBy(-_.quantity))
       case _ =>
         Left(ServiceResponse(false, "База данных слов пуста"))
     }

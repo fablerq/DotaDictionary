@@ -21,8 +21,8 @@ class WordRepository(wordCollection: MongoCollection[Word]) {
   def getWordsByPage(page: Int) =
     wordCollection
       .find()
-      .skip(page * 5)
-      .limit(5)
+      .skip(page * 15)
+      .limit(15)
       .toFuture()
 
   def getByTitle(title: String): Future[Word] =
