@@ -68,7 +68,6 @@ class ArticleRoutes(articleService: ArticleService) {
             }
         }
     }
-    }
   }
 
 }
