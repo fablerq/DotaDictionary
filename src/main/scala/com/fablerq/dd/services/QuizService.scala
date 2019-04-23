@@ -58,7 +58,7 @@ class QuizServiceImpl(
       quizRepository.getById(objectId).map {
         case word: Quiz => Right(word)
         case _ =>
-          Left(ServiceResponse(false, "Квиз не найдено!"))
+          Left(ServiceResponse(false, "Квиз не найден!"))
       }
     } else Future(Left(ServiceResponse(false, "Неверный запрос!")))
   }

@@ -20,41 +20,40 @@ class QuizRoutes(quizService: QuizService) {
           entity(as[QuizParams]) { params =>
             complete(quizService.addQuiz(params))
           }
-        }
-      } ~
+        } ~
         parameters("id".as[String]) { id =>
           delete {
             complete(quizService.deleteQuiz(id))
           } ~
-          post {
-            complete(quizService.getQuiz(id))
-          }
+            post {
+              complete(quizService.getQuiz(id))
+            }
         } ~
         parameters(
           "collectionId".as[String],
           "quizType".as[Int],
           "level".as[String]) {
-            (collectionId, quizType, level) =>
-              post {
-                complete(quizService.startQuiz(collectionId, quizType, level))
-              }
-          } ~
-      parameters(
-        "quizId".as[String],
-        "step".as[Int],
-        "answer".as[String]) {
-        (quizId, step, answer) =>
-          post {
-            complete(quizService.continueQuiz(quizId, step, answer))
-          }
-      } ~
-      parameters(
-        "doneQuizId".as[String]) {
-        doneQuizId =>
-          post {
-            complete(quizService.doneQuiz(doneQuizId))
-          }
-      }
+          (collectionId, quizType, level) =>
+            post {
+              complete(quizService.startQuiz(collectionId, quizType, level))
+            }
+        } ~
+        parameters(
+          "quizId".as[String],
+          "step".as[Int],
+          "answer".as[String]) {
+          (quizId, step, answer) =>
+            post {
+              complete(quizService.continueQuiz(quizId, step, answer))
+            }
+        } ~
+        parameters(
+          "doneQuizId".as[String]) {
+          doneQuizId =>
+            post {
+              complete(quizService.doneQuiz(doneQuizId))
+            }
+        }
+    }
   }
-
 }
