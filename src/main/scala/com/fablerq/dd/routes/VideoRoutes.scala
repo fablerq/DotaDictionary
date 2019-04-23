@@ -41,22 +41,21 @@ class VideoRoutes(videoService: VideoService) {
             post {
               complete(videoService.addStatToVideo(video, stat, percent))
             }
-        }
-    } ~
-      path("countvideos") {
-        parameters("id".as[String], "page".as[Int]) {
-          (id, page) =>
-            post {
-              complete(videoService.getWordsByPage(id, page))
-            }
         } ~
-          parameters("id".as[String]) {
-            id =>
+        path("count") {
+          parameters("id".as[String], "page".as[Int]) {
+            (id, page) =>
               post {
-                complete(videoService.getCountOfWords(id))
+                complete(videoService.getWordsByPage(id, page))
               }
-          }
-      }
+          } ~
+            parameters("id".as[String]) {
+              id =>
+                post {
+                  complete(videoService.getCountOfWords(id))
+                }
+            }
+        }
+    }
   }
-
 }

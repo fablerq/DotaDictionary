@@ -52,21 +52,21 @@ class ArticleRoutes(articleService: ArticleService) {
               patch {
                 complete(articleService.updateWordStatForArticle(article, wordstat))
               }
+        } ~
+        path("count") {
+          parameters("id".as[String], "page".as[Int]) {
+            (id, page) =>
+              post {
+                complete(articleService.getWordsByPage(id, page))
+              }
+          } ~
+            parameters("id".as[String]) {
+              id =>
+                post {
+                  complete(articleService.getCountOfWords(id))
+                }
+            }
         }
-    } ~
-    path("countarticles") {
-      parameters("id".as[String], "page".as[Int]) {
-        (id, page) =>
-          post {
-            complete(articleService.getWordsByPage(id, page))
-          }
-      } ~
-      parameters("id".as[String]) {
-        id =>
-          post {
-            complete(articleService.getCountOfWords(id))
-          }
-      }
     }
   }
 
