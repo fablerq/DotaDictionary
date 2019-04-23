@@ -13,6 +13,8 @@ trait ArticleService {
   //main functions for articles
   def getAllArticles: Future[Either[ServiceResponse, Seq[Article]]]
   def getArticle(id: String): Future[Either[ServiceResponse, Article]]
+  def getCountOfWords(id: String): Future[ServiceResponse]
+  def getWordsByPage(id: String, page: Int): Future[Either[ServiceResponse, List[WordStat]]]
   def setArticleTitle(title: String): String
   def getByIdDirectly(id: ObjectId): Future[Option[Article]]
   def getIdByLink(link: String): Future[Option[Article]]
@@ -54,6 +56,32 @@ class ArticleServiceImpl(articleRepository: ArticleRepository)
           )))
         case None =>
           Future.successful(Left(ServiceResponse(false, "Статья не найдена!")))
+      }
+    } else Future.successful(Left(ServiceResponse(false, "Неверный запрос!")))
+  }
+
+  def getCountOfWords(id: String): Future[ServiceResponse] = {
+    if (ObjectId.isValid(id)) {
+      val objectId = new ObjectId(id)
+      getByIdDirectly(objectId).flatMap {
+        case Some(x) =>
+          Future.successful(ServiceResponse(false, x.words.length.toString))
+        case None =>
+          Future.successful(ServiceResponse(false, "Статья не найдена!"))
+      }
+    } else Future.successful(ServiceResponse(false, "Неверный запрос!"))
+  }
+
+  def getWordsByPage(id: String, page: Int): Future[Either[ServiceResponse, List[WordStat]]] = {
+    if (ObjectId.isValid(id)) {
+      val objectId = new ObjectId(id)
+      getByIdDirectly(objectId).map {
+        case Some(x) =>
+          Right(x
+            .words.sortBy(-_.count)
+            .slice((page - 1) * 15, page * 15))
+        case None =>
+          Left(ServiceResponse(false, "Статья не найдена!"))
       }
     } else Future.successful(Left(ServiceResponse(false, "Неверный запрос!")))
   }

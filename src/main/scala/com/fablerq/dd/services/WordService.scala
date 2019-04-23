@@ -32,9 +32,10 @@ class WordServiceImpl(wordRepository: WordRepository) extends WordService {
     }
   }
 
+  //to-do change this shit sorting
   def getWordsByPage(page: Int): Future[Either[ServiceResponse, Seq[Word]]] = {
     wordRepository.getAll.map {
-      case x: Seq[Word] if x.nonEmpty => //Right(x)
+      case x: Seq[Word] if x.nonEmpty =>
         Right(x
           .sortBy(-_.quantity)
           .slice((page - 1) * 15, page * 15))

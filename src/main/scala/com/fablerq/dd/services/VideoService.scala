@@ -11,6 +11,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 trait VideoService {
   def getAllVideos: Future[Either[ServiceResponse, Seq[Video]]]
   def getVideo(id: String): Future[Either[ServiceResponse, Video]]
+  def getCountOfWords(id: String): Future[ServiceResponse]
+  def getWordsByPage(id: String, page: Int): Future[Either[ServiceResponse, List[WordStat]]]
   def getIdByLink(link: String): Future[Option[Video]]
   def getByIdDirectly(id: ObjectId): Future[Option[Video]]
   def addVideo(params: VideoParams): Future[ServiceResponse]
@@ -48,6 +50,32 @@ class VideoServiceImpl(videoRepository: VideoRepository) extends VideoService {
         case _ =>
           Future.successful(
             Left(ServiceResponse(false, "Видео не найдено!")))
+      }
+    } else Future.successful(Left(ServiceResponse(false, "Неверный запрос!")))
+  }
+
+  def getCountOfWords(id: String): Future[ServiceResponse] = {
+    if (ObjectId.isValid(id)) {
+      val objectId = new ObjectId(id)
+      getByIdDirectly(objectId).flatMap {
+        case Some(x) =>
+          Future.successful(ServiceResponse(false, x.words.length.toString))
+        case None =>
+          Future.successful(ServiceResponse(false, "Видео не найдено!"))
+      }
+    } else Future.successful(ServiceResponse(false, "Неверный запрос!"))
+  }
+
+  def getWordsByPage(id: String, page: Int): Future[Either[ServiceResponse, List[WordStat]]] = {
+    if (ObjectId.isValid(id)) {
+      val objectId = new ObjectId(id)
+      getByIdDirectly(objectId).map {
+        case Some(x) =>
+          Right(x
+            .words.sortBy(-_.count)
+            .slice((page - 1) * 15, page * 15))
+        case None =>
+          Left(ServiceResponse(false, "Видео не найдено!"))
       }
     } else Future.successful(Left(ServiceResponse(false, "Неверный запрос!")))
   }

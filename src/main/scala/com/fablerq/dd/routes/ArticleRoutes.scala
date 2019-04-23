@@ -53,6 +53,20 @@ class ArticleRoutes(articleService: ArticleService) {
                 complete(articleService.updateWordStatForArticle(article, wordstat))
               }
         }
+    } ~
+    path("countarticles") {
+      parameters("id".as[String], "page".as[Int]) {
+        (id, page) =>
+          post {
+            complete(articleService.getWordsByPage(id, page))
+          }
+      } ~
+      parameters("id".as[String]) {
+        id =>
+          post {
+            complete(articleService.getCountOfWords(id))
+          }
+      }
     }
   }
 
