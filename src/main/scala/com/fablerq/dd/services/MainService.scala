@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.{HttpMethods, HttpRequest, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.fablerq.dd.models._
 import com.fablerq.dd.configs.Json4sSupport._
-import net.liftweb.json._
+import net.liftweb.json.{JsonAST, _}
 
 import sys.process._
 import scala.io.Source
@@ -17,7 +17,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import com.fablerq.dd.Server.system
 import com.fablerq.dd.Server.materializer
 import com.typesafe.config.ConfigFactory
+
 import org.mongodb.scala.bson.ObjectId
+
 
 trait MainService {
   def defineRequest(request: String): Future[MainServiceResponse]
@@ -28,6 +30,13 @@ trait MainService {
   def setStatsForArticle(articleId: ObjectId, rightWords: List[WordStat]): Future[Boolean]
   def handlingVideo(videoLink: String): Future[MainServiceResponse]
   def setStatsForVideo(videoId: ObjectId, rightWords: List[WordStat]): Future[Boolean]
+  def handlingJson(request: String): Future[MainServiceResponse]
+  def handlingDataFromJson(collectionTitle: String,
+                           collectionDesc: String,
+                           requestType: String,
+                           jsonField: String,
+                           isText: Boolean): Future[MainServiceResponse]
+  def recordWord(word: String, repetitions: Long): Future[Boolean]
 }
 
 class MainServiceImpl(
@@ -43,15 +52,17 @@ class MainServiceImpl(
   val aylienId = config.getString("aylien.id")
 
   val ValidURlRequest = "^(https?)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]".r
-  val ValidWordRequest = "[a-zA-Z]+".r
+  val ValidWordRequest = "[a-zA-Z\\s]{0,20}".r
   val ValidYoutubeRequest = "^(https?\\:\\/\\/)?(www\\.youtube\\.com|youtu\\.?be)\\/.+$".r
+  val ValidGithubJsonRequest = "https://raw.githubusercontent.com.*|.*json".r
 
   def defineRequest(request: String): Future[MainServiceResponse] = {
     request match {
       case x if x.matches(ValidYoutubeRequest.toString()) => handlingVideo(request)
+      //case ValidGithubJsonRequest() => handlingJson(request)
       case ValidURlRequest(_) => handlingArticle(request)
       case ValidWordRequest() => handlingWord(request)
-      case _ => Future(MainServiceResponse(false))
+      case _ => Future.successful(MainServiceResponse(false))
     }
   }
 
@@ -100,7 +111,7 @@ class MainServiceImpl(
                 }
             }
         case Some(x) =>
-          Future(MainServiceResponse(
+          Future.successful(MainServiceResponse(
             true,
             Some("word"),
             Some(x._id.toString)
@@ -109,12 +120,13 @@ class MainServiceImpl(
   }
 
   def translateWord(word: String): Future[String] = {
+    val formattedWord = word.replaceAll(" ", "%20")
     Http()
       .singleRequest(HttpRequest(
         HttpMethods.GET,
         Uri(s"https://translate.yandex.net/api/v1.5/tr.json/translate" +
           s"?key=$yandexKey" +
-          s"&text=$word" +
+          s"&text=$formattedWord" +
           s"&lang=en-ru" +
           s"&format=plain")
       ))
@@ -161,7 +173,7 @@ class MainServiceImpl(
                 }
             }
         case Some(article) =>
-          Future(MainServiceResponse(
+          Future.successful(MainServiceResponse(
           true,
           Some("article"),
           Some(article._id.toString)
@@ -183,7 +195,7 @@ class MainServiceImpl(
           )
         }
     }.flatMap { _ =>
-      Future(true)
+      Future.successful(true)
     }
   }
 
@@ -214,7 +226,6 @@ class MainServiceImpl(
             val videoInfoJson: JValue =
               parse(Source.fromFile("src/main/resources/info.info.json").mkString)
 
-            //why List[()] not simple turple?
             val videoInfo: List[(String, String)] = for {
               JObject(x) <- videoInfoJson
               JField("title", JString(title)) <- x
@@ -244,7 +255,7 @@ class MainServiceImpl(
           } else
             Future(MainServiceResponse(false))
         case Some(video) =>
-         Future(MainServiceResponse(
+         Future.successful(MainServiceResponse(
           true,
           Some("video"),
           Some(video._id.toString)
@@ -266,8 +277,154 @@ class MainServiceImpl(
           )
         }
     }.flatMap { _ =>
-      Future(true)
+      Future.successful(true)
     }
   }
+
+  //=============================
+  // Json dota constants
+  //=============================
+
+  def handlingJson(request: String): Future[MainServiceResponse] = {
+    request match {
+      case x if x.endsWith("heroes.json") =>
+        handlingDataFromJson(
+          "Герои",
+          "Коллекция с именами героев",
+          "heroes",
+          "localized_name",
+          false).map { _ =>
+            MainServiceResponse(true)
+        }
+      case x if x.endsWith("items.json") =>
+        handlingDataFromJson(
+          "Предметы",
+          "Коллекция с названиями предметом",
+          "items",
+          "dname",
+          false).flatMap { _ =>
+            handlingDataFromJson(
+              "Описания предметов",
+              "Коллекция с описаниями предметов",
+              "items",
+              "lore",
+              true).map { _ =>
+                MainServiceResponse(true)
+            }
+        }
+      case x if x.endsWith("abilities.json") =>
+        handlingDataFromJson(
+          "Способности",
+          "Коллекция с названиями способностей героев",
+          "abilities",
+          "dname",
+          false).flatMap { _ =>
+          handlingDataFromJson(
+            "Описания способностей",
+            "Коллекция с описаниями способностей",
+            "abilities",
+            "desc",
+            true).map { _ =>
+            MainServiceResponse(true)
+          }
+        }
+      case x if x.endsWith("hero_lore.json") =>
+        handlingDataFromJson(
+          "Лор героев",
+          "Коллекция с именами героев",
+          "hero_lore",
+          "hero_lore",
+          true).map { _ =>
+          MainServiceResponse(true)
+        }
+      case _ =>
+        Future.successful(MainServiceResponse(false))
+    }
+  }
+
+  def handlingDataFromJson(collectionTitle: String,
+                             collectionDesc: String,
+                             requestType: String,
+                             jsonField: String,
+                             isText: Boolean): Future[MainServiceResponse] = {
+    wordCollectionService.getWordCollectionByTitle(collectionTitle).flatMap {
+      case Some(x) =>
+        Future.successful(MainServiceResponse(true))
+      case None =>
+        val data: JValue =
+          parse(Source.fromURL(s"https://raw.githubusercontent.com/odota/" +
+            s"dotaconstants/master/build/$requestType.json").mkString)
+
+        val extractedData: List[String] = jsonField match {
+          case "hero_lore" =>
+            for {
+              JObject(x) <- data
+              JField(_, JString(value)) <- x
+            } yield value
+          case _ =>
+            for {
+              JObject(x) <- data
+              JField(field, JString(value)) <- x
+              if field == jsonField
+              if !value.exists(_.isDigit)
+            } yield value
+        }
+
+        val purifiedData: Either[List[String], List[WordStat]] =
+          if (isText) Right(setWords(extractedData.mkString))
+          else Left(extractedData)
+
+        val wordsForCollection: List[String] =
+          purifiedData match {
+            case Left(x) => x
+            case Right(x) => x.map(x => x.word)
+          }
+
+        val newCollection =
+          WordCollectionParams(
+            Some(collectionTitle),
+            Some(collectionDesc),
+            Some(wordsForCollection))
+
+        val translatedData: Future[List[Boolean]] =
+          purifiedData match {
+            case Left(x) =>
+              Future.sequence(x.map { word =>
+                recordWord(word, 1)
+              })
+            case Right(x) =>
+              Future.sequence(x.map { wordStat =>
+               recordWord(wordStat.word, wordStat.count)
+              })
+          }
+
+          wordCollectionService.addWordCollection(newCollection).flatMap { x =>
+            translatedData.map { _ =>
+              if (x.bool)
+                MainServiceResponse(true)
+              else
+                MainServiceResponse(false)
+          }
+        }
+    }
+  }
+
+  def recordWord(word: String, repetitions: Long): Future[Boolean] = {
+    wordService.getWordByTitle(word)
+      .flatMap {
+        case None =>
+          translateWord(word).flatMap { translated =>
+            val newWord = WordParams(
+              Some(word),
+              Some(translated),
+              None,
+              Some(repetitions))
+            wordService.addWord(newWord).map(_ => true)
+          }
+        case Some(x) =>
+          wordService.updateQuantity(x._id.toString, repetitions).map(_ => true)
+      }
+  }
+
 
 }

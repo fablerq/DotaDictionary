@@ -13,5 +13,6 @@ case class Word(
 case class WordParams(
   title: Option[String] = None,
   translate: Option[String] = None,
-  frequency: Option[Long] = None
+  frequency: Option[Long] = None,
+  quantity: Option[Long] = None
 )

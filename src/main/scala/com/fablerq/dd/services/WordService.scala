@@ -18,7 +18,7 @@ trait WordService {
   def updateWordTranslate(params: WordParams): Future[ServiceResponse]
   def deleteWord(id: String): Future[ServiceResponse]
   def deleteWordByTitle(title: String): Future[ServiceResponse]
-  def updateQuantity(id: String): Future[ServiceResponse]
+  def updateQuantity(id: String, quantity: Long): Future[ServiceResponse]
 }
 
 class WordServiceImpl(wordRepository: WordRepository) extends WordService {
@@ -62,7 +62,7 @@ class WordServiceImpl(wordRepository: WordRepository) extends WordService {
     }
 
   def addWord(params: WordParams): Future[ServiceResponse] = params match {
-    case WordParams(Some(title), Some(translate), None) =>
+    case WordParams(Some(title), Some(translate), None, None) =>
       getWordByTitle(title).flatMap {
         case Some(x) =>
           Future.successful(
@@ -76,6 +76,14 @@ class WordServiceImpl(wordRepository: WordRepository) extends WordService {
             ServiceResponse(true, "Слово успешно добавлено")
           }
       }
+    //uses when adding word by json request in MainService
+    case WordParams(Some(title), Some(translate), None, Some(quantity)) =>
+      wordRepository.addWord(Word.apply(
+        new ObjectId(), title,
+        translate, 0, quantity
+      )).map { x =>
+        ServiceResponse(true, "Слово успешно добавлено")
+      }
     case _ =>
       Future.successful(
         ServiceResponse(false,
@@ -83,7 +91,7 @@ class WordServiceImpl(wordRepository: WordRepository) extends WordService {
   }
 
   def updateWordTranslate(params: WordParams): Future[ServiceResponse] = params match {
-    case WordParams(Some(title), Some(translate), None) =>
+    case WordParams(Some(title), Some(translate), None, None) =>
       getWordByTitle(title).flatMap {
         case Some(x) =>
           wordRepository.updateWordTranslate(x._id, translate).map { x=>
@@ -123,12 +131,14 @@ class WordServiceImpl(wordRepository: WordRepository) extends WordService {
     }
   }
 
-  def updateQuantity(id: String): Future[ServiceResponse] = {
+  def updateQuantity(id: String, quantity: Long): Future[ServiceResponse] = {
     if (ObjectId.isValid(id)) {
       val objectId = new ObjectId(id)
       getByIdDirectly(objectId).flatMap {
-        case Some(x) =>
-          wordRepository.updateQuantity(x._id, x.quantity).map { x =>
+        case Some(word) =>
+          wordRepository.updateQuantity(
+            word._id,
+            word.quantity + quantity).map { x =>
             ServiceResponse(true, "Количество повторений у слова обновлено")
           }
         case None =>

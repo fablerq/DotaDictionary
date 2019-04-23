@@ -53,8 +53,8 @@ object Mongo {
   lazy val customCodecs = fromProviders(
     classOf[Word],
     classOf[WordCollection],
+    classOf[Question],
     classOf[Quiz],
-    classOf[Dwi],
     classOf[Stat],
     classOf[WordStat],
     classOf[Article],
@@ -87,7 +87,4 @@ object Mongo {
   val quizCollection: MongoCollection[Quiz] =
     database.getCollection("quizzes")
 
-  //dwi collection
-  val dwiCollection: MongoCollection[Dwi] =
-    database.getCollection("dwis")
 }

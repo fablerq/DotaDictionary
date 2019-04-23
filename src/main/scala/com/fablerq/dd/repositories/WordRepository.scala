@@ -49,10 +49,9 @@ class WordRepository(wordCollection: MongoCollection[Word]) {
     wordCollection.deleteOne(Document("_id" -> id)).toFuture()
 
   def updateQuantity(id: ObjectId, quantity: Long): Future[UpdateResult] = {
-    val PlusOneToQuantity = quantity + 1
     wordCollection.updateOne(
       Document("_id" -> id),
-      Document("$set" -> Document("quantity" -> PlusOneToQuantity))
+      Document("$set" -> Document("quantity" -> quantity))
     ).toFuture()
   }
 

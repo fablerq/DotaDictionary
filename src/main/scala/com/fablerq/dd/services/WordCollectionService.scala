@@ -71,6 +71,16 @@ class WordCollectionServiceImpl(wordCollectionRepository: WordCollectionReposito
             ServiceResponse(true, "Коллекция слов успешно добавлена")
           }
       }
+    //executed from handlingJson method
+    case WordCollectionParams(Some(title), Some(description), Some(words)) =>
+      wordCollectionRepository.addWordCollection(WordCollection.apply(
+        new ObjectId(),
+        title,
+        description,
+        words
+      )).map { x =>
+        ServiceResponse(true, "Коллекция слов успешно добавлена")
+      }
     case _ =>
       Future.successful(ServiceResponse(false, s"Коллекцию слов ${params.title} " +
         s"не удалось добавить. Неверный запрос"))

@@ -13,6 +13,7 @@ case class ArticleResponse(
 
 case class TranslateResponse(
   code: Int,
-  lang: String,
+  lang: Option[String] = None,
   text: List[String]
 )
+

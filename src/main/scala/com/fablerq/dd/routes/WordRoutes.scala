@@ -27,9 +27,6 @@ class WordRoutes(wordService: WordService) {
           delete {
             complete(wordService.deleteWordByTitle(id))
           } ~
-            patch {
-              complete(wordService.updateQuantity(id))
-            } ~
             post {
               complete(wordService.getWordByTitle(id))
             }

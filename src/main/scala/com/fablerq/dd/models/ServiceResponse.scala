@@ -7,3 +7,4 @@ case class MainServiceResponse(
   responseType: Option[String] = None,
   typeId: Option[String] = None
 )
+
