@@ -11,6 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 trait WordService {
   def getAllWords: Future[Either[ServiceResponse, Seq[Word]]]
   def getWordsByPage(page: Int): Future[Either[ServiceResponse, Seq[Word]]]
+  def getCountOfWords(): Future[ServiceResponse]
   def getWord(id: String): Future[Either[ServiceResponse, Word]]
   def getWordByTitle(title: String): Future[Option[Word]]
   def getByIdDirectly(id: ObjectId): Future[Option[Word]]
@@ -32,10 +33,19 @@ class WordServiceImpl(wordRepository: WordRepository) extends WordService {
   }
 
   def getWordsByPage(page: Int): Future[Either[ServiceResponse, Seq[Word]]] = {
-    wordRepository.getWordsByPage(page).map {
-      case x: Seq[Word] if x.nonEmpty => Right(x)
+    wordRepository.getAll.map {
+      case x: Seq[Word] if x.nonEmpty => //Right(x)
+        Right(x
+          .sortBy(-_.quantity)
+          .slice((page - 1) * 15, page * 15))
       case _ =>
         Left(ServiceResponse(false, "База данных слов пуста"))
+    }
+  }
+
+  def getCountOfWords(): Future[ServiceResponse] = {
+    wordRepository.count.map{ x =>
+      ServiceResponse(true, x.toString)
     }
   }
 

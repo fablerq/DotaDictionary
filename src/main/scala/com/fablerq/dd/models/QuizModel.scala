@@ -9,6 +9,7 @@ case class Quiz(
       level: String,
       date: String,
       questions: List[Question],
+      //not good practise to send true answers in real apps
       answers: List[String],
       quizType: Int,
       doneSteps: Int,

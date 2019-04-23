@@ -41,6 +41,11 @@ class WordRoutes(wordService: WordService) {
             complete(wordService.getWordsByPage(page))
           }
         }
+    } ~
+    path("countwords") {
+      post {
+        complete(wordService.getCountOfWords())
+      }
     }
   }
 }
