@@ -59,7 +59,7 @@ class VideoServiceImpl(videoRepository: VideoRepository) extends VideoService {
       val objectId = new ObjectId(id)
       getByIdDirectly(objectId).flatMap {
         case Some(x) =>
-          Future.successful(ServiceResponse(false, x.words.length.toString))
+          Future.successful(ServiceResponse(true, x.words.length.toString))
         case None =>
           Future.successful(ServiceResponse(false, "Видео не найдено!"))
       }

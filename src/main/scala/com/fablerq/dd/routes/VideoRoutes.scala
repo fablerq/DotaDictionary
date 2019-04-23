@@ -30,32 +30,21 @@ class VideoRoutes(videoService: VideoService) {
             delete {
               complete(videoService.deleteVideo(id))
             }
-        } ~
-        parameters("video".as[String], "stat".as[String]) { (video, stat) =>
-          delete {
-            complete(videoService.deleteStatFromVideo(video, stat))
-          }
-        } ~
-        parameters("video".as[String], "stat".as[String], "percent".as[Int]) {
-          (video, stat, percent) =>
-            post {
-              complete(videoService.addStatToVideo(video, stat, percent))
-            }
-        } ~
-        path("count") {
-          parameters("id".as[String], "page".as[Int]) {
-            (id, page) =>
-              post {
-                complete(videoService.getWordsByPage(id, page))
-              }
-          } ~
-            parameters("id".as[String]) {
-              id =>
-                post {
-                  complete(videoService.getCountOfWords(id))
-                }
-            }
         }
+    } ~
+    path("countvideos") {
+      parameters("id".as[String], "page".as[Int]) {
+        (id, page) =>
+          post {
+            complete(videoService.getWordsByPage(id, page))
+          }
+      } ~
+      parameters("id".as[String]) {
+        id =>
+          post {
+            complete(videoService.getCountOfWords(id))
+          }
+      }
     }
   }
 }

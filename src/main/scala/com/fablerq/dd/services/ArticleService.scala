@@ -65,7 +65,7 @@ class ArticleServiceImpl(articleRepository: ArticleRepository)
       val objectId = new ObjectId(id)
       getByIdDirectly(objectId).flatMap {
         case Some(x) =>
-          Future.successful(ServiceResponse(false, x.words.length.toString))
+          Future.successful(ServiceResponse(true, x.words.length.toString))
         case None =>
           Future.successful(ServiceResponse(false, "Статья не найдена!"))
       }
