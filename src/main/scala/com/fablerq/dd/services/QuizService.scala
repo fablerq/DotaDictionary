@@ -331,7 +331,7 @@ class QuizServiceImpl(
               responseOptions = Some(shuffledElements),
               step = data._2,
               userAnswer = None),
-              data._1._1)
+            translated)
           }
 
         }
