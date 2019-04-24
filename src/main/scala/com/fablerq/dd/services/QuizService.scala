@@ -213,7 +213,7 @@ class QuizServiceImpl(
                 question.userAnswer match {
                   case None =>
                     val isTrue: Int = answer match {
-                      case x if x == quiz.answers(step) => 1
+                      case x if x == quiz.answers.reverse(step) => 1
                       case _ => 0
                     }
                     val updatedQuestion = Question.apply(
