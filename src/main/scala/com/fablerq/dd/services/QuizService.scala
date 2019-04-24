@@ -1,6 +1,8 @@
 package com.fablerq.dd.services
 
 import java.text.SimpleDateFormat
+import java.time.format.DateTimeFormatter
+import java.time.{LocalDateTime, ZoneId}
 import java.util.Calendar
 
 import com.fablerq.dd.models.{Question, Quiz, QuizParams, ServiceResponse}
@@ -15,6 +17,9 @@ import scala.util.Random
 trait QuizService {
   def getAllQuizzes: Future[Either[ServiceResponse, Seq[Quiz]]]
   def getQuiz(id: String): Future[Either[ServiceResponse, Quiz]]
+  def getNumberOfQuestions(id: String): Future[ServiceResponse]
+  def getQuizzesByPage(page: Int): Future[Either[ServiceResponse, Seq[Quiz]]]
+  def getCountOfQuizzes: Future[ServiceResponse]
   def getQuizByTitle(title: String): Future[Option[Quiz]]
   def getByIdDirectly(id: ObjectId): Future[Option[Quiz]]
   def addQuiz(params: QuizParams): Future[ServiceResponse]
@@ -62,6 +67,35 @@ class QuizServiceImpl(
           Left(ServiceResponse(false, "Квиз не найден!"))
       }
     } else Future(Left(ServiceResponse(false, "Неверный запрос!")))
+  }
+
+  def getNumberOfQuestions(id: String): Future[ServiceResponse] = {
+    if (ObjectId.isValid(id)) {
+      val objectId = new ObjectId(id)
+      quizRepository.getById(objectId).map {
+        case word: Quiz =>
+          ServiceResponse(false, word.questions.length.toString)
+        case _ =>
+          ServiceResponse(false, "Квиз не найден!")
+      }
+    } else Future(ServiceResponse(false, "Неверный запрос!"))
+  }
+
+  def getQuizzesByPage(page: Int): Future[Either[ServiceResponse, Seq[Quiz]]] = {
+    quizRepository.getAll.map {
+      case x: Seq[Quiz] if x.nonEmpty =>
+        Right(x
+          .sortBy(_.title)
+          .slice((page - 1) * 10, page * 10))
+      case _ =>
+        Left(ServiceResponse(false, "База данных квизов пуста"))
+    }
+  }
+
+  def getCountOfQuizzes: Future[ServiceResponse] = {
+    quizRepository.count.map{ x =>
+      ServiceResponse(true, x.toString)
+    }
   }
 
   def getQuizByTitle(title: String): Future[Option[Quiz]] = {
@@ -126,9 +160,10 @@ class QuizServiceImpl(
               }
               println("totalsteps="+totalSteps)
 
-              val format = new SimpleDateFormat("d-M-y h:m")
               val date: String =
-                format.format(Calendar.getInstance().getTime())
+                LocalDateTime
+                  .now(ZoneId.of("Europe/Moscow"))
+                  .format(DateTimeFormatter.ofPattern("d-M-y h:m"))
 
               //((Word, Type of answer), Index of step)
               val questions: List[((String, Int), Int)] =
@@ -231,16 +266,12 @@ class QuizServiceImpl(
                               .flatMap { _ =>
                                 quizRepository.addQuestion(objectId, updatedQuestion)
                                   .flatMap { _ =>
-                                    if (step + 1 == quiz.totalSteps)
-                                      Future.successful(ServiceResponse(true,
-                                        "Это был последий вопрос!"))
-                                    else
-                                      isTrue match {
-                                        case 1 =>
-                                          Future.successful(ServiceResponse(true, "Верно!"))
-                                        case 0 =>
-                                          Future.successful(ServiceResponse(true, "Ошибка!"))
-                                      }
+                                    isTrue match {
+                                      case 1 =>
+                                        Future.successful(ServiceResponse(true, "Верно!"))
+                                      case 0 =>
+                                        Future.successful(ServiceResponse(true, "Ошибка!"))
+                                    }
                                   }
                               }
                           }

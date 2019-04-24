@@ -61,6 +61,24 @@ class QuizRoutes(quizService: QuizService) {
               complete(quizService.doneQuiz(doneQuizId))
             }
         }
+    } ~
+    path("countquizzes") {
+      post {
+        complete(quizService.getCountOfQuizzes)
+      } ~
+      parameters("page".as[Int]) {
+        page =>
+          post {
+            complete(quizService.getQuizzesByPage(page))
+          }
+      } ~
+        parameters("id".as[String]) {
+          id =>
+            post {
+              complete(quizService.getNumberOfQuestions(id))
+            }
+        }
     }
+
   }
 }
