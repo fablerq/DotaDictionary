@@ -242,7 +242,7 @@ class QuizServiceImpl(
               Future.successful(ServiceResponse(false,
                 s"Ошибка! Квиз уже был пройден"))
             case false =>
-              if (0 <= step && step < quiz.totalSteps) {
+              if (0 <= step && step <= quiz.totalSteps) {
                 val question: Question = quiz.questions.find(_.step == step).get
                 //check if answer has already given
                 question.userAnswer match {
