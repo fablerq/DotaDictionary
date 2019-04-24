@@ -41,7 +41,7 @@ class QuizRepository(quizCollection: MongoCollection[Quiz]) {
   def updateQuizDoneSteps(id: ObjectId, doneSteps: Int): Future[UpdateResult] = {
     quizCollection.updateOne(
       Document("_id" -> id),
-      Document("$set" -> Document("score" -> doneSteps))
+      Document("$set" -> Document("doneSteps" -> doneSteps))
     ).toFuture()
   }
 
