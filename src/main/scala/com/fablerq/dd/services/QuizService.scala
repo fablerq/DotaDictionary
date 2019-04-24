@@ -137,10 +137,7 @@ class QuizServiceImpl(
                   .map(x => x -> (Random.nextInt(4) + quizType))
                 .zipWithIndex
 
-              println("questions="+questions)
-
               setQuestionsForQuiz(questions).flatMap { data =>
-                println("brat"+data)
                 quizRepository.count.flatMap { numberOfQuizzes =>
                   val params: QuizParams =
                     QuizParams(
@@ -322,7 +319,7 @@ class QuizServiceImpl(
             Random.shuffle(finalElements :+ data._1._1)
           (Question.apply(
             title = s"Как перевести слово '${data._1._1}'?",
-            questionType = 0,
+            questionType = 1,
             responseOptions = Some(shuffledElements),
             step = data._2,
             userAnswer = None),
@@ -337,7 +334,7 @@ class QuizServiceImpl(
     mainService.translateWord(data._1._1).map { word =>
       (Question.apply(
         title = s"Как на английском будет слово '$word'?",
-        questionType = 1,
+        questionType = 2,
         responseOptions = None,
         step = data._2),
         word)
@@ -364,7 +361,7 @@ class QuizServiceImpl(
 
           (Question.apply(
             title = s"Как на английском будет слово '$word'?",
-            questionType = 0,
+            questionType = 3,
             responseOptions = Some(shuffledElements),
             step = data._2,
             userAnswer = None),
@@ -378,7 +375,7 @@ class QuizServiceImpl(
     mainService.translateWord(data._1._1).map { word =>
       (Question.apply(
         title = s"Прослушайте слово. Как оно переводится?",
-        questionType = 1,
+        questionType = 4,
         responseOptions = None,
         step = data._2),
       word)
