@@ -314,16 +314,19 @@ class QuizServiceImpl(
         val finalTranslatedElements: Future[List[String]] =
           unwrapFutureList(translatedElements)
 
-        finalTranslatedElements.map { finalElements =>
-          val shuffledElements: List[String] =
-            Random.shuffle(finalElements :+ data._1._1)
-          (Question.apply(
-            title = s"Как перевести слово '${data._1._1}'?",
-            questionType = 1,
-            responseOptions = Some(shuffledElements),
-            step = data._2,
-            userAnswer = None),
-            data._1._1)
+        finalTranslatedElements.flatMap { finalElements =>
+          mainService.translateWord(data._1._1).map { translated =>
+            val shuffledElements: List[String] =
+              Random.shuffle(finalElements :+ translated)
+            (Question.apply(
+              title = s"Как перевести слово '${data._1._1}'?",
+              questionType = 1,
+              responseOptions = Some(shuffledElements),
+              step = data._2,
+              userAnswer = None),
+              data._1._1)
+          }
+
         }
 
     }
