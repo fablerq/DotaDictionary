@@ -62,7 +62,7 @@ class QuizServiceImpl(
     if (ObjectId.isValid(id)) {
       val objectId = new ObjectId(id)
       quizRepository.getById(objectId).map {
-        case word: Quiz => Right(word)
+        case quiz: Quiz => Right(quiz)
         case _ =>
           Left(ServiceResponse(false, "Квиз не найден!"))
       }
@@ -73,8 +73,8 @@ class QuizServiceImpl(
     if (ObjectId.isValid(id)) {
       val objectId = new ObjectId(id)
       quizRepository.getById(objectId).map {
-        case word: Quiz =>
-          ServiceResponse(false, word.questions.length.toString)
+        case quiz: Quiz =>
+          ServiceResponse(false, quiz.totalSteps.toString)
         case _ =>
           ServiceResponse(false, "Квиз не найден!")
       }
