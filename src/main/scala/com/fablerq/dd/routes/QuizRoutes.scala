@@ -30,6 +30,13 @@ class QuizRoutes(quizService: QuizService) {
             }
         } ~
         parameters(
+          "playQuizId".as[String]) {
+          playQuizId =>
+            post {
+              complete(quizService.playQuiz(playQuizId))
+            }
+        } ~
+        parameters(
           "collectionId".as[String],
           "quizType".as[Int],
           "level".as[String]) {

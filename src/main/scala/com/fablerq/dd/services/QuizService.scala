@@ -25,6 +25,7 @@ trait QuizService {
           level: String): Future[ServiceResponse]
   def setQuestionsForQuiz(
           questions: List[((String, Int), Int)]): Future[List[(Question, String)]]
+  def playQuiz(quizId: String): Future[Either[ServiceResponse, Question]]
   def continueQuiz(
           quizId: String,
           step: Int,
@@ -178,6 +179,22 @@ class QuizServiceImpl(
       }
     }
     unwrapFutureList(result)
+  }
+
+  def playQuiz(quizId: String): Future[Either[ServiceResponse, Question]] = {
+    if (ObjectId.isValid(quizId)) {
+      val objectId = new ObjectId(quizId)
+      getByIdDirectly(objectId).flatMap {
+        case None =>
+          Future.successful(Left(ServiceResponse(false, s"Квиз не найден")))
+        case Some(quiz) =>
+          val question: Question =
+            quiz.questions.find(_.step == quiz.doneSteps).get
+          Future.successful(Right(question))
+      }
+    }
+    else
+      Future.successful(Left(ServiceResponse(false, s"Неверный запрос!")))
   }
 
   def continueQuiz(
