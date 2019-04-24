@@ -63,9 +63,6 @@ class QuizRoutes(quizService: QuizService) {
         }
     } ~
     path("countquizzes") {
-      post {
-        complete(quizService.getCountOfQuizzes)
-      } ~
       parameters("page".as[Int]) {
         page =>
           post {
@@ -77,6 +74,9 @@ class QuizRoutes(quizService: QuizService) {
             post {
               complete(quizService.getNumberOfQuestions(id))
             }
+        } ~
+        post {
+          complete(quizService.getCountOfQuizzes)
         }
     }
 
