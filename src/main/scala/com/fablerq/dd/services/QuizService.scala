@@ -119,9 +119,9 @@ class QuizServiceImpl(
             }
             else {
               val totalSteps: Int = level match {
-                case "Легкий" => y.words.length
-                case "Средний" => y.words.length
-                case _ => y.words.length
+                case "Легкий" => 10
+                case "Средний" => 20
+                case _ => 30
               }
               println("totalsteps="+totalSteps)
 
