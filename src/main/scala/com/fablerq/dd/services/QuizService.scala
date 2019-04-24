@@ -283,13 +283,16 @@ class QuizServiceImpl(
 
   //en-rus without options
   def matchType0(data: ((String, Int), Int)): Future[(Question, String)] = {
-    Future.successful(Question.apply(
-      title = s"Как перевести слово '${data._1._1}'?",
-      questionType = 0,
-      responseOptions = None,
-      step = data._2,
-      userAnswer = None),
-      data._1._1)
+    mainService.translateWord(data._1._1).map { word =>
+      (Question.apply(
+        title = s"Как перевести слово '${data._1._1}'?",
+        questionType = 0,
+        responseOptions = None,
+        step = data._2,
+        userAnswer = None),
+      word)
+    }
+
   }
 
   //en-rus with options
@@ -340,7 +343,7 @@ class QuizServiceImpl(
         questionType = 2,
         responseOptions = None,
         step = data._2),
-        word)
+       data._1._1)
     }
   }
 
