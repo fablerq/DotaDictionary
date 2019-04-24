@@ -231,12 +231,16 @@ class QuizServiceImpl(
                               .flatMap { _ =>
                                 quizRepository.addQuestion(objectId, updatedQuestion)
                                   .flatMap { _ =>
-                                    isTrue match {
-                                      case 1 =>
-                                        Future.successful(ServiceResponse(true, "Верно!"))
-                                      case 0 =>
-                                        Future.successful(ServiceResponse(true, "Ошибка!"))
-                                    }
+                                    if (step + 1 == quiz.totalSteps)
+                                      Future.successful(ServiceResponse(true,
+                                        "Это был последий вопрос!"))
+                                    else
+                                      isTrue match {
+                                        case 1 =>
+                                          Future.successful(ServiceResponse(true, "Верно!"))
+                                        case 0 =>
+                                          Future.successful(ServiceResponse(true, "Ошибка!"))
+                                      }
                                   }
                               }
                           }
