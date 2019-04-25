@@ -49,11 +49,11 @@ class WordRoutes(wordService: WordService) {
       }
     } ~
     path("wordaudio") {
-//      parameters("audioid".as[String]) { audioid =>
-//        post {
-//          complete(wordService.getAudio(audioid))
-//        }
-//      } ~
+      parameters("audioid".as[String]) { audioid =>
+        post {
+          complete(wordService.getAudio(audioid))
+        }
+      } ~
         parameters("getaudio".as[String]) { audio =>
             getFromResource(s"$audio.wav")
         }
