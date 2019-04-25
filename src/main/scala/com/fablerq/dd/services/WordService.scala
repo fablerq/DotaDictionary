@@ -3,17 +3,7 @@ package com.fablerq.dd.services
 import java.io.File
 import java.nio.file.{Files, Paths}
 
-import akka.http.javadsl.model.headers.ContentDisposition
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{HttpResponse, Uri}
-import akka.stream.scaladsl._
-import akka.stream.{Graph, Materializer, SinkShape}
-import akka.util.ByteString
-
-import scala.concurrent.Future
-import scala.util.Try
-import akka.http.javadsl.model.headers.ContentDisposition
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model._
