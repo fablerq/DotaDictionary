@@ -185,7 +185,7 @@ class WordServiceImpl(wordRepository: WordRepository) extends WordService {
     val ValidWordRequest = "[a-zA-Z\\s]{0,20}".r
     word match {
       case ValidWordRequest() =>
-        if (Files.exists(Paths.get("src/main/resources/$word.wav"))) {
+        if (!Files.exists(Paths.get(s"src/main/resources/$word.wav"))) {
           val response: Future[Option[AudioResponse]] = Http()
             .singleRequest(HttpRequest(
               HttpMethods.POST,

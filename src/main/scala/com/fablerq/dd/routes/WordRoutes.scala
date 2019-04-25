@@ -48,15 +48,15 @@ class WordRoutes(wordService: WordService) {
         complete(wordService.getCountOfWords())
       }
     } ~
-    path("wordaudio") {
-      parameters("audioid".as[String]) { audioid =>
+    path("checkaudio") {
+      parameters("title".as[String]) { title =>
         post {
-          complete(wordService.getAudio(audioid))
+          complete(wordService.getAudio(title))
         }
-      } ~
-        parameters("getaudio".as[String]) { audio =>
-            getFromResource(s"$audio.wav")
-        }
+      }
+    } ~
+    path("getaudio" / Segment) { title =>
+      getFromFile(s"src/main/resources/$title.wav")
     }
   }
 }
