@@ -223,7 +223,7 @@ class MainServiceImpl(
                 .filter(_.count % 3 == 0)
                 .map(x => WordStat(x.word, x.count / 3))
 
-            val videoInfoJson: JValue =
+            val videoInfoJson =
               parse(Source.fromFile("src/main/resources/info.info.json").mkString)
 
             val videoInfo: List[(String, String)] = for {
@@ -351,7 +351,7 @@ class MainServiceImpl(
       case Some(x) =>
         Future.successful(MainServiceResponse(true))
       case None =>
-        val data: JValue =
+        val data=
           parse(Source.fromURL(s"https://raw.githubusercontent.com/odota/" +
             s"dotaconstants/master/build/$requestType.json").mkString)
 

@@ -1,9 +1,34 @@
 package com.fablerq.dd.services
 
-import com.fablerq.dd.models.{ ServiceResponse, Word, WordParams }
+import java.io.File
+import java.nio.file.{Files, Paths}
+
+import akka.http.javadsl.model.headers.ContentDisposition
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.model.{HttpResponse, Uri}
+import akka.stream.scaladsl._
+import akka.stream.{Graph, Materializer, SinkShape}
+import akka.util.ByteString
+
+import scala.concurrent.Future
+import scala.util.Try
+import akka.http.javadsl.model.headers.ContentDisposition
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import com.fablerq.dd.models._
 import com.fablerq.dd.repositories.WordRepository
 import org.bson.types.ObjectId
 import org.mongodb.scala.bson.ObjectId
+import com.fablerq.dd.Server.system
+import com.fablerq.dd.Server.materializer
+import com.typesafe.config.ConfigFactory
+import org.json4s.jackson.Serialization.write
+import akka.http.scaladsl.model.HttpRequest
+import akka.stream.scaladsl.FileIO
+import com.fablerq.dd.configs.Json4sSupport._
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -20,9 +45,13 @@ trait WordService {
   def deleteWord(id: String): Future[ServiceResponse]
   def deleteWordByTitle(title: String): Future[ServiceResponse]
   def updateQuantity(id: String, quantity: Long): Future[ServiceResponse]
+  def getAudio(word: String): Future[ServiceResponse]
 }
 
 class WordServiceImpl(wordRepository: WordRepository) extends WordService {
+
+  lazy val config = ConfigFactory.load()
+  val ibmKey = config.getString("ibm.key")
 
   def getAllWords: Future[Either[ServiceResponse, Seq[Word]]] = {
     wordRepository.getAll.map {
@@ -158,6 +187,58 @@ class WordServiceImpl(wordRepository: WordRepository) extends WordService {
               "Количество повторений у слова не удалось обновить"))
       }
     } else Future.successful(ServiceResponse(false, "Неверный запрос!"))
+  }
+
+
+  //to-do change double http, unnecessary
+  def getAudio(word: String): Future[ServiceResponse] = {
+    val ValidWordRequest = "[a-zA-Z\\s]{0,20}".r
+    word match {
+      case ValidWordRequest() =>
+        if (Files.exists(Paths.get("src/main/resources/$word.wav"))) {
+          val response: Future[Option[AudioResponse]] = Http()
+            .singleRequest(HttpRequest(
+              HttpMethods.POST,
+              Uri(s"https://iam.bluemix.net/identity/token" +
+                s"?grant_type=urn:ibm:params:oauth:grant-type:apikey" +
+                s"&apikey=$ibmKey")
+            ).withHeaders(
+              RawHeader("Content-Type", "application/x-www-form-urlencoded"),
+              RawHeader("Accept", "application/json"),
+              RawHeader("Authorization", "Basic Yng6Yng=")
+            ))
+            .flatMap(Unmarshal(_).to[Option[AudioResponse]])
+          response.flatMap {
+            case None =>
+              Future.successful(ServiceResponse(false, "Ошибка на стороне IBM!"))
+            case Some(response) =>
+              val data = AudioRequest(word)
+              val answer: Future[HttpResponse] = Http()
+                .singleRequest(HttpRequest(
+                  HttpMethods.POST,
+                  Uri(s"https://gateway-lon.watsonplatform.net/text-to-speech/api/v1/synthesize" +
+                    s"?apikey=$ibmKey"),
+                  entity = HttpEntity(ContentTypes.`application/json`, write(data))
+                ).withHeaders(
+                  RawHeader("Content-Type", "application/json"),
+                  RawHeader("Accept", "audio/wav"),
+                  RawHeader("Authorization", s"Bearer ${response.access_token}")
+                ))
+                .flatMap(Unmarshal(_).to[HttpResponse])
+
+              answer.map { response =>
+                response.entity.dataBytes
+                  .runWith(FileIO.toPath(
+                    new File(s"src/main/resources/$word.wav").toPath))
+              }
+              Future.successful(ServiceResponse(true, "Успешно"))
+          }
+        }
+        else
+          Future.successful(ServiceResponse(true, "Уже существует!"))
+      case _ =>
+        Future.successful(ServiceResponse(false, "Неверный запрос!"))
+    }
   }
 
 }

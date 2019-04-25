@@ -258,7 +258,7 @@ class QuizServiceImpl(
                       step = question.step,
                       userAnswer = Some(answer))
 
-                    quizRepository.updateQuizScore(objectId, isTrue)
+                    quizRepository.updateQuizScore(objectId, quiz.score + isTrue)
                       .flatMap { _ =>
                         quizRepository.updateQuizDoneSteps(objectId, quiz.doneSteps + 1)
                           .flatMap { _ =>

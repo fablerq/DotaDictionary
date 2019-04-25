@@ -5,6 +5,7 @@ import com.fablerq.dd.services.WordService
 import com.fablerq.dd.configs.Json4sSupport._
 import com.fablerq.dd.models.WordParams
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
+import akka.http.scaladsl.server.directives.ContentTypeResolver.Default
 
 class WordRoutes(wordService: WordService) {
 
@@ -46,6 +47,16 @@ class WordRoutes(wordService: WordService) {
       post {
         complete(wordService.getCountOfWords())
       }
+    } ~
+    path("wordaudio") {
+//      parameters("audioid".as[String]) { audioid =>
+//        post {
+//          complete(wordService.getAudio(audioid))
+//        }
+//      } ~
+        parameters("getaudio".as[String]) { audio =>
+            getFromResource(s"$audio.wav")
+        }
     }
   }
 }

@@ -17,3 +17,17 @@ case class TranslateResponse(
   text: List[String]
 )
 
+case class AudioResponse(
+        access_token: String,
+        refresh_token: String,
+        token_type: String,
+        expires_in: Int,
+        expiration: Int,
+        scope: String
+      )
+
+sealed abstract class JValue
+case class AudioRequest(
+               text: String
+               ) extends JValue
+
