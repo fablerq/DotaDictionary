@@ -1,9 +1,7 @@
 package com.fablerq.dd.services
 
-import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDateTime, ZoneId}
-import java.util.Calendar
 
 import com.fablerq.dd.models.{Question, Quiz, QuizParams, ServiceResponse}
 import com.fablerq.dd.repositories.QuizRepository
@@ -256,7 +254,8 @@ class QuizServiceImpl(
                       questionType = question.questionType,
                       responseOptions = question.responseOptions,
                       step = question.step,
-                      userAnswer = Some(answer))
+                      userAnswer = Some(answer),
+                      audioTitle = question.audioTitle)
 
                     quizRepository.updateQuizScore(objectId, quiz.score + isTrue)
                       .flatMap { _ =>
@@ -324,7 +323,8 @@ class QuizServiceImpl(
         questionType = 0,
         responseOptions = None,
         step = data._2,
-        userAnswer = None),
+        userAnswer = None,
+        audioTitle = None),
       word)
     }
 
@@ -361,7 +361,8 @@ class QuizServiceImpl(
               questionType = 1,
               responseOptions = Some(shuffledElements),
               step = data._2,
-              userAnswer = None),
+              userAnswer = None,
+              audioTitle = None),
             translated)
           }
 
@@ -377,7 +378,9 @@ class QuizServiceImpl(
         title = s"Как на английском будет слово '$word'?",
         questionType = 2,
         responseOptions = None,
-        step = data._2),
+        step = data._2,
+        userAnswer = None,
+        audioTitle = None),
        data._1._1)
     }
   }
@@ -405,8 +408,9 @@ class QuizServiceImpl(
             questionType = 3,
             responseOptions = Some(shuffledElements),
             step = data._2,
-            userAnswer = None),
-            data._1._1)
+            userAnswer = None,
+            audioTitle = None),
+           data._1._1)
       }
     }
   }
@@ -418,7 +422,9 @@ class QuizServiceImpl(
         title = s"Прослушайте слово. Как оно переводится?",
         questionType = 4,
         responseOptions = None,
-        step = data._2),
+        step = data._2,
+        userAnswer = None,
+        audioTitle = Some(data._1._1)),
       word)
     }
   }
@@ -435,6 +441,8 @@ class QuizServiceImpl(
             }
       }
   }
+
+
 
 
 

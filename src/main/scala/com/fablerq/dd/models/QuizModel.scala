@@ -38,4 +38,5 @@ case class Question(
      responseOptions: Option[List[String]] = None,
      step: Int,
      userAnswer: Option[String] = None,
+     audioTitle: Option[String] = None
      )
